@@ -1,13 +1,21 @@
 const express = require("express");
+const path = require('path');
+const dotenv = require('dotenv');
+
+if (process.env.NODE_ENV === 'dev') {
+    dotenv.config({path: path.join(__dirname, './.env.dev')});
+} else {
+    dotenv.config({path: path.join(__dirname, './.env.prod')});
+}
+
 // const { events } = require("./data"); //data sheet of events
 
 const app = express();
 
-const port = 3000;
+//Add a NODEPORT=300X to the .env files
+const port = process.env.NODEPORT;
 
 app.get("/", (req, res) => {
-  console.log("Request Received");
-  //res.status(200).send("HELLO WORLD!\n");
   res.send("HELLO WORLD!billy bob \n");
 });
 
