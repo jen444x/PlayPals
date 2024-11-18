@@ -1,16 +1,17 @@
+
+//USE bin/www FOR EDITS!!!
+
 const express = require("express");
+const app = express();
 const path = require('path');
 const dotenv = require('dotenv');
+// const { events } = require("./data"); //data sheet of events
 
 if (process.env.NODE_ENV === 'dev') {
     dotenv.config({path: path.join(__dirname, './.env.dev')});
 } else {
     dotenv.config({path: path.join(__dirname, './.env.prod')});
 }
-
-// const { events } = require("./data"); //data sheet of events
-
-const app = express();
 
 //Add a NODEPORT=300X to the .env files
 const port = process.env.NODEPORT;
