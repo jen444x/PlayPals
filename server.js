@@ -16,6 +16,8 @@ if (process.env.NODE_ENV === 'dev') {
 //Add a NODEPORT=300X to the .env files
 const port = process.env.NODEPORT;
 
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
+
 app.get("/", (req, res) => {
   res.send("HELLO WORLD!billy bob \n");
 });
@@ -27,6 +29,6 @@ app.get("/", (req, res) => {
 // });
 // //end of delaney adds
 
-app.listen(port, () => {
-  console.log(`Server running at http://127.0.0.1:${port}/`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server running at http://0.0.0.0:${port}/`);
 });

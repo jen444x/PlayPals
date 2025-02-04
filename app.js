@@ -4,9 +4,11 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const dotenv = require('dotenv');
+const db = require('./sql/config');
 
 var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+var usersRouter = require('./routes/api/users');
+var postsRouter = require('./routes/api/posts')
 
 var app = express();
 
@@ -22,7 +24,8 @@ app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
 
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/posts', postsRouter);
 
 app.get('/login', (req, res) => {
   res.render('login', {title: 'Login'});
@@ -30,6 +33,18 @@ app.get('/login', (req, res) => {
 
 app.get('/register', (req, res) => {
   res.render('register', {title: 'Register'});
+});
+
+app.get('/feed', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM post ORDER BY created_at DESC')
+    res.render('feed', {
+      title: "Feed",
+      posts: result.rows
+    })
+  } catch (err) {
+      console.error(err.message);
+  }
 });
 
 app.use((req, res, next) => {
