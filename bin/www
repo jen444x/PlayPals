@@ -9,6 +9,7 @@ var debug = require('debug')('backend:server');
 var http = require('http');
 var path = require('path');
 const dotenv = require('dotenv');
+const socketIo = require('socket.io')
 
 if (process.env.NODE_ENV === 'dev') {
   dotenv.config({path: path.join(__dirname, './../.env.dev')});
@@ -97,3 +98,40 @@ function onListening() {
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
 }
+
+const io = socketIo(server, {
+  cors: {
+    origin: process.env.NODE_ENV === "production"
+      ? false
+      : ["http://localhost:3000"]
+  }
+})
+
+io.on('connection', socket => {
+  console.log(`User ${socket.id} connected`) //Logging user ID
+
+  // Upon connection - only to user
+  socket.emit("message", "Welcome to Chat App!")
+
+  // Upon connection - to all others
+  socket.broadcast.emit('message', 
+    `User ${socket.id.substring(0,5)} connected`)
+
+  socket.on('message', data => {
+    console.log(data)
+    io.emit('message', `${socket.id.substring(0,5)}: ${data}`) //Send to all connected clients
+  })
+
+  //User disconnects - to others
+  socket.on('disconnect', () => {
+    socket.broadcast.emit('message', 
+      `User ${socket.id.substring(0,5)} disconnected`)
+  })
+
+  //Listen for activity
+  socket.on('activity', (name) => {
+    socket.broadcast.emit('activity', name)
+  })
+})
+
+module.exports = server

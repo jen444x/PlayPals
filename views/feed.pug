@@ -17,7 +17,7 @@ doctype html
 <body>
     <div class = "posts">
     <h1>Create a Post</h1>
-        <form action="/api/posts/submitFeedPost" method="POST">
+        <form action="/api/posts/submitFeedPost" method="POST" enctype='multipart/form-data'>
         <div>
            <label for='title'>Title</label>
             <input type="text" id="title" name="title" required>
@@ -27,6 +27,9 @@ doctype html
            <label for='body'>Body</label>
             <textarea type="text" id="body" name="body" rows="4" cols="5" required>
             </textarea>
+        </div>
+        <div>
+            <input type='file' id='image' name= 'image' accept='image/*'>
         </div>
         <button type="submit">Post</button>
         </form>

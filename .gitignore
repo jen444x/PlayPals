@@ -1,3 +1,9 @@
 .env.dev
 .env.prod
 /node_modules
+
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.svg
