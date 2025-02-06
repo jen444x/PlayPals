@@ -7,3 +7,5 @@
 *.png
 *.gif
 *.svg
+
+.gitlab-ci.yml
