@@ -1,0 +1,16 @@
+stages:
+  - deploy
+
+deployToDigitalOcean:
+  stage: deploy
+  script:
+    - echo "Deploying..."
+    - cd /home/def/www/backend
+    - source .env.prod
+    - git fetch origin
+    - git checkout $DEPLOY_BRANCH
+    - git pull origin $DEPLOY_BRANCH
+    - npm install
+    - pm2 stop all
+    - pm2 start ./bin/www --watch
+    - pm2 save
