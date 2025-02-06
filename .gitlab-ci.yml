@@ -7,11 +7,12 @@ deployToDigitalOcean:
   stage: deploy
   script:
     - echo "Deploying..."
-    - source .env.prod
+    - if [[ "$CI_COMMIT_BRANCH" == "main" ]]; then export DEPLOY_PATH=$DEPLOY_PATH_MAIN; fi
+    - if [[ "$CI_COMMIT_BRANCH" == "george" ]]; then export DEPLOY_PATH=$DEPLOY_PATH_TEST1; fi
     - cd $DEPLOY_PATH
     - git fetch origin
-    - git checkout $DEPLOY_BRANCH
-    - git pull origin $DEPLOY_BRANCH
+    - git checkout $CI_COMMIT_BRANCH
+    - git pull origin $CI_COMMIT_BRANCH
     - npm install
     - pm2 stop all
     - pm2 start ./bin/www --watch
