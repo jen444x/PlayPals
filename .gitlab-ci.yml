@@ -7,9 +7,9 @@ deployToDigitalOcean:
   stage: deploy
   script:
     - echo "Deploying..."
-    - git config --global --add safe.directory /home/def/test1/playpals-backend
     - if [[ "$CI_COMMIT_BRANCH" == "main" ]]; then export DEPLOY_PATH=$DEPLOY_PATH_MAIN; fi
     - if [[ "$CI_COMMIT_BRANCH" == "george" ]]; then export DEPLOY_PATH=$DEPLOY_PATH_TEST1; fi
+    - git config --global --add safe.directory $DEPLOY_PATH
     - cd $DEPLOY_PATH
     - git fetch origin
     - git checkout $CI_COMMIT_BRANCH
