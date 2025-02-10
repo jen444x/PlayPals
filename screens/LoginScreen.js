@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Image } from 'react-native';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,KeyboardAvoidingView, 
+  TouchableWithoutFeedback, Keyboard} from 'react-native';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -22,7 +23,10 @@ export default function LoginScreen({ navigation }) {
 
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+   
+   <View style={styles.container}>
       <Image source = {require('../assets/pet_logo.png')} style={styles.logo}/>
       <Text style={styles.title}>Welcome to PlayPals! 🐾</Text>
       
@@ -50,6 +54,8 @@ export default function LoginScreen({ navigation }) {
         <Text style={styles.linkText}>New here? Sign up and join the pack! 🐕</Text>
       </TouchableOpacity>
     </View>
+    </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   
   
 
