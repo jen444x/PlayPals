@@ -1,10 +1,25 @@
 import React, { useState } from 'react';
 import { Image } from 'react-native';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const handleLogin = () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter both email and password.");
+      return;
+    }
+
+    // Replace this with real authentication logic (API call, etc.)
+    if (email === "test@example.com" && password === "1234") {
+      navigation.navigate('Home');  // Navigate to Home on successful login
+    } else {
+      Alert.alert("Error", "Invalid credentials");
+    }
+  };
+
 
   return (
     <View style={styles.container}>
@@ -27,7 +42,7 @@ export default function LoginScreen({ navigation }) {
         onChangeText={setPassword}
         secureTextEntry
       />
-      <TouchableOpacity style={styles.button}>
+      <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
       
@@ -35,7 +50,10 @@ export default function LoginScreen({ navigation }) {
         <Text style={styles.linkText}>New here? Sign up and join the pack! 🐕</Text>
       </TouchableOpacity>
     </View>
-  );
+  
+  
+
+);
 }
 
 const styles = StyleSheet.create({
