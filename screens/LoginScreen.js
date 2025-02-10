@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Image } from 'react-native';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 
 export default function LoginScreen({ navigation }) {
@@ -7,16 +8,21 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
+      <Image source = {require('../assets/pet_logo.png')} style={styles.logo}/>
+      <Text style={styles.title}>Welcome to PlayPals! 🐾</Text>
+      
       <TextInput
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor="#7a7a7a"
         value={email}
         onChangeText={setEmail}
       />
+     
       <TextInput
         style={styles.input}
         placeholder="Password"
+        placeholderTextColor="#7a7a7a"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -24,18 +30,20 @@ export default function LoginScreen({ navigation }) {
       <TouchableOpacity style={styles.button}>
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
+      
       <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-        <Text style={styles.linkText}>Don't have an account? Sign Up</Text>
+        <Text style={styles.linkText}>New here? Sign up and join the pack! 🐕</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-  input: { width: '80%', padding: 10, borderWidth: 1, marginBottom: 10, borderRadius: 5 },
-  button: { backgroundColor: '#007bff', padding: 10, width: '80%', alignItems: 'center', borderRadius: 5 },
-  buttonText: { color: 'white', fontSize: 16 },
-  linkText: { marginTop: 10, color: 'blue' }
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FCEECF' },
+  logo: { width: 200, height: 200, marginBottom: 20 },
+  title: { fontSize: 26, fontWeight: 'bold',color: '#5A3E36', marginBottom: 20 },
+  input: { width: '80%', padding: 12, borderWidth: 2, borderColor: '#E07A5F',backgroundColor: '#FFF5E4', marginBottom: 10, borderRadius: 25, textAlign: 'center' },
+  button: { backgroundColor: '#E07A5F', padding: 12, width: '80%', alignItems: 'center', borderRadius: 25 },
+  buttonText: { color: 'white', fontSize: 18,fontWeight:'bold' },
+  linkText: { marginTop: 15, color: '#D1495B',fontSize:16 }
 });
