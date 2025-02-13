@@ -7,11 +7,7 @@ router.get('/', function(req, res, next) {
 });
 
 const viewsRouter = require('./views/views')
-const usersRouter = require('./api/users')
-const postsRouter = require('./api/posts')
 
 router.use('/', viewsRouter)
-router.use('/users', usersRouter)
-router.use('/posts', postsRouter)
 
 module.exports = router;

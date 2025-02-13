@@ -29,7 +29,7 @@ doctype html
             </textarea>
         </div>
         <div>
-            <input type='file' id='image' name= 'image' accept='image/*'>
+            <input type='file' id='image' name= 'image' accept='image/*' multiple>
         </div>
         <button type="submit">Post</button>
         </form>
@@ -45,6 +45,10 @@ doctype html
                         br
                         | #{post.body}
                         br
+                        if post.images && post.images.length 
+                            <div>
+                                each image in post.images
+                                    img(src=image width="100")
                         small= 'Posted on: ' + new Date(post.created_at).toLocaleString()
             else
                 li No posts available.

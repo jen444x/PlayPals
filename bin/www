@@ -103,7 +103,7 @@ const io = socketIo(server, {
   cors: {
     origin: process.env.NODE_ENV === "production"
       ? false
-      : ["http://localhost:3000"]
+      : [`http://localhost:${process.env.NODEPORT}`]
   }
 })
 

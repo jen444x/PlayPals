@@ -19,12 +19,12 @@ const upload = multer({ storage: storage });
 // adding a post
 router.post("/submitFeedPost", upload.array('image', 5), async (req, res) => {
     const {title, body} = req.body;
-    const imagePath = req.file ? req.file.path : [];
+    const imagePaths = req.files ? req.files.map(file => file.path.replace('public', '')) : [];
     console.log('Received:', title, body);
   try {
     const query = {
         text: 'INSERT INTO post (title, body, images, created_at) VALUES ($1, $2, $3, NOW()) RETURNING *',
-        values: [title, body, imagePath],
+        values: [title, body, imagePaths],
     };
     const result = await db.query(query);
     console.log('Post added:', result.rows[0])
