@@ -28,12 +28,12 @@ router.post('/submitForumSubTopic', async (req, res) => {
     if (!req.body || Object.keys(req.body).length === 0) {
         return res.status(400).json({ error: 'Request body is empty' });
     }
-    const {name, description}= req.body;
+    const {topicId, name, description}= req.body;
     console.log('Received: ', name, description)
     try {
         const query = {
-            text: 'INSERT INTO "forumSubTopic" ("subTopicName", "subTopicDesc") VALUES ($1, $2)',
-            values: [name, description],
+            text: 'INSERT INTO "forumSubTopic" ("inTopicId", "subTopicName", "subTopicDesc") VALUES ($1, $2, $3)',
+            values: [topicId, name, description],
         }
         const result = await db.query(query)
         console.log('Inserted: ', result.rows[0])

@@ -15,6 +15,7 @@ html(lang=en)
                 h1=topic.topicName
                 p=topic.topicDesc
                 form(action="/api/forum/submitForumSubTopic" method="POST")
+                    input(type="hidden" name='topicId' value=topic.topicId)
                     label(for='name') Sub Topic Name
                     input(type='text' id='name' name='name' required)
                     br
@@ -23,7 +24,7 @@ html(lang=en)
                     br
                     button(type="submit") Submit
                 each subtopic in subTopics
-                    if subtopic.topicId === topic.id
+                    if subtopic.inTopicId === topic.topicId
                         h2= subtopic.subTopicName
 
     form(action="/api/forum/submitForumTopic" method="POST")

@@ -32,6 +32,10 @@ router.get('/forum', async (req, res) => {
     }
 })
 
+router.get('/forum/subTopic/:subTopicName', async (req, res) => {
+    const subTopicId = req.params.id;
+})
+
 router.get('/chat', (req, res) => {
   res.render('chat', {title: 'Chat Test'});
 });
