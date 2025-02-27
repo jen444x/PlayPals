@@ -48,7 +48,7 @@ router.post('/submitForumThread', async (req, res) => {
         return res.status(400).json({ error: 'Request body is empty' });
     }
     const {subTopicId, name, body} = req.body
-    console.log("Received ", name, body)
+    console.log("Received ", subTopicId, name, body)
 
     try {
         const queryThread = { 
@@ -57,11 +57,11 @@ router.post('/submitForumThread', async (req, res) => {
         }
 
         const threadRes = await db.query(queryThread);
-        const threadId = threadRes.rows[0].threadId;
+        const postThreadId = threadRes.rows[0].threadId;
 
         const initPost = {
             text:'INSERT INTO "forumPosts" ("postThreadId", "postContent") VALUES ($1, $2)',
-            values: [threadId, body]
+            values: [postThreadId, body]
         }
 
         await db.query(initPost);
@@ -69,6 +69,22 @@ router.post('/submitForumThread', async (req, res) => {
         return res.redirect(`/forum/subTopic/${subTopicId}`);
     } catch (err) {
         console.log(err.message)
+    }
+})
+
+router.post('/submitPost', async (req, res) => {
+    const {threadId, body} = req.body;
+    console.log('Received: ', threadId, body)
+
+    try {
+        const query = {
+            text: 'INSERT INTO "forumPosts" ("postThreadId", "postContent") VALUES ($1, $2)',
+            values: [threadId, body],
+        }
+        const result = await db.query(query)
+        return res.redirect(`/forum/thread/${threadId}`)
+    } catch (err) {
+        console.log(err.message);
     }
 })
 

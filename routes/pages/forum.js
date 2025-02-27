@@ -41,8 +41,23 @@ router.get('/subTopic/:subTopicId', async (req, res) => {
     }
 })
 
-router.get('/post/:threadId', async (req, res) => {
-  const subTopicId = req.params.id;
+router.get('/thread/:threadId', async (req, res) => {
+  const threadsId = req.params.threadId;
+
+  try {
+    const query = await db.query(
+        'SELECT * FROM "forumPosts" WHERE "postThreadId" = $1 ORDER BY "forumPostId" ASC', [threadsId] 
+    )
+    const posts = query.rows
+
+    res.render('thread', {
+        title: "Thread",
+        posts: posts,
+        threadId: threadsId
+    })
+  } catch (err) {
+        console.error(err.message)
+  }
 })
 
 module.exports = router;
