@@ -25,7 +25,8 @@ html(lang=en)
                     button(type="submit") Submit
                 each subtopic in subTopics
                     if subtopic.inTopicId === topic.topicId
-                        h2= subtopic.subTopicName
+                        a(href=`/forum/subTopic/${subtopic.subTopicId}`)
+                            h2= subtopic.subTopicName
 
     form(action="/api/forum/submitForumTopic" method="POST")
         label(for='name') Topic Name

@@ -22,20 +22,6 @@ router.get('/feed', async (req, res) => {
   }
 });
 
-router.get('/forum', async (req, res) => {
-    try {
-        const topics = await db.query('SELECT * FROM "forumTopic" ORDER BY "topicName"')
-        const subTopics = await db.query('SELECT * FROM "forumSubTopic"')
-        res.render('forum', {title: 'Forum', topics: topics.rows, subTopics: subTopics.rows})
-    } catch (err) {
-        console.error(err.message)
-    }
-})
-
-router.get('/forum/subTopic/:subTopicName', async (req, res) => {
-    const subTopicId = req.params.id;
-})
-
 router.get('/chat', (req, res) => {
   res.render('chat', {title: 'Chat Test'});
 });

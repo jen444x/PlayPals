@@ -43,6 +43,35 @@ router.post('/submitForumSubTopic', async (req, res) => {
     }
 })
 
+router.post('/submitForumThread', async (req, res) => {
+    if (!req.body || Object.keys(req.body).length === 0) {
+        return res.status(400).json({ error: 'Request body is empty' });
+    }
+    const {subTopicId, name, body} = req.body
+    console.log("Received ", name, body)
+
+    try {
+        const queryThread = { 
+        text:'INSERT INTO "forumsThread" ("inSubTopicId", "threadTitle") VALUES ($1, $2) RETURNING "threadId"',
+        values: [subTopicId, name]
+        }
+
+        const threadRes = await db.query(queryThread);
+        const threadId = threadRes.rows[0].threadId;
+
+        const initPost = {
+            text:'INSERT INTO "forumPosts" ("postThreadId", "postContent") VALUES ($1, $2)',
+            values: [threadId, body]
+        }
+
+        await db.query(initPost);
+
+        return res.redirect(`/forum/subTopic/${subTopicId}`);
+    } catch (err) {
+        console.log(err.message)
+    }
+})
+
 router.get('/getForumTopics', async (req, res) => {
     try {
         const topics = await db.query('SELECT * FROM "forumTopic" ORDER BY "topicName"')

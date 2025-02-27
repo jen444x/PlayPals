@@ -23,14 +23,16 @@ app.use(express.static(path.join(__dirname, 'public')));
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/api/users');
 var postsRouter = require('./routes/api/posts');
-var forumRouter = require('./routes/api/forum');
-var pagesRouter = require('./routes/pages/pages')
+var apiForumRouter = require('./routes/api/forum');
+var pagesRouter = require('./routes/pages/pages');
+var forumRouter = require('./routes/pages/forum');
 
 app.use('/', indexRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/posts', postsRouter);
-app.use('/api/forum', forumRouter);
+app.use('/api/forum', apiForumRouter);
 app.use('/', pagesRouter);
+app.use('/forum', forumRouter);
 
 app.use((req, res, next) => {
     console.log(`Request received: ${req.path}`);
