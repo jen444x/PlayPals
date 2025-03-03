@@ -8,21 +8,38 @@ const CalendarScreen = () => {
     const { petName } = route.params || {};
     const [selectedDate, setSelectedDate] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
-    const [eventText, setEventText] = useState('');
+    const [eventDetails, setEventDetails] = useState({
+        eventType: '',
+        location: '',
+        notes: '',
+        pet: petName || '',
+        time: '',
+    });
     const [events, setEvents] = useState({});
 
     // Handle adding an event
     const addEvent = () => {
-        if (selectedDate && eventText.trim()) {
+        const { eventType, location, notes, pet, time } = eventDetails;
+        if (selectedDate && eventType.trim() && location.trim() && time.trim()) {
+            const newEvent = {
+                eventType,
+                location,
+                notes,
+                pet,
+                time,
+            };
             setEvents((prevEvents) => ({
                 ...prevEvents,
-                [selectedDate]: [...(prevEvents[selectedDate] || []), eventText],
+                [selectedDate]: [...(prevEvents[selectedDate] || []), newEvent],
             }));
-            setEventText('');
+            setEventDetails({ eventType: '', location: '', notes: '', pet: petName || '', time: '' });
             setModalVisible(false);
+        } else {
+            alert('Please fill in all required fields.');
         }
     };
-
+ // Prepare the markedDates object to highlight days with events
+ 
     return (
         <View style={styles.container}>
             <Text style={styles.title}>{petName}'s Calendar</Text>
@@ -31,6 +48,10 @@ const CalendarScreen = () => {
                 onDayPress={(day) => setSelectedDate(day.dateString)}
                 markedDates={{
                     [selectedDate]: { selected: true, selectedColor: '#E76F51' },
+                    ...Object.keys(events).reduce((acc, date) => {
+                        acc[date] = { marked: true, dotColor: '#F4A261' };
+                        return acc;
+                    }, {}),
                 }}
                 theme={{
                     selectedDayBackgroundColor: '#E76F51',
@@ -47,7 +68,8 @@ const CalendarScreen = () => {
                         keyExtractor={(item, index) => index.toString()}
                         renderItem={({ item }) => (
                             <View style={styles.eventItem}>
-                                <Text style={styles.eventText}>• {item}</Text>
+                                <Text style={styles.eventText}>• {item.eventType} at {item.location} at {item.time}</Text>
+                                {item.notes && <Text style={styles.notesText}>Notes: {item.notes}</Text>}
                             </View>
                         )}
                     />
@@ -62,10 +84,28 @@ const CalendarScreen = () => {
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
                         <TextInput
-                            placeholder="Enter event (Playdate, Vet Visit...)"
+                            placeholder="Event Type (e.g. Playdate)"
                             style={styles.input}
-                            value={eventText}
-                            onChangeText={setEventText}
+                            value={eventDetails.eventType}
+                            onChangeText={(text) => setEventDetails({ ...eventDetails, eventType: text })}
+                        />
+                        <TextInput
+                            placeholder="Location"
+                            style={styles.input}
+                            value={eventDetails.location}
+                            onChangeText={(text) => setEventDetails({ ...eventDetails, location: text })}
+                        />
+                        <TextInput
+                            placeholder="Notes"
+                            style={styles.input}
+                            value={eventDetails.notes}
+                            onChangeText={(text) => setEventDetails({ ...eventDetails, notes: text })}
+                        />
+                        <TextInput
+                            placeholder="Time (e.g. 3:00 PM)"
+                            style={styles.input}
+                            value={eventDetails.time}
+                            onChangeText={(text) => setEventDetails({ ...eventDetails, time: text })}
                         />
                         <TouchableOpacity style={styles.modalButton} onPress={addEvent}>
                             <Text style={styles.modalButtonText}>Save Event</Text>
@@ -108,6 +148,11 @@ const styles = StyleSheet.create({
     eventText: {
         color: 'white',
         fontSize: 16,
+    },
+    notesText: {
+        color: '#FFFBF2',
+        fontSize: 14,
+        marginTop: 5,
     },
     addButton: {
         backgroundColor: '#E76F51',
