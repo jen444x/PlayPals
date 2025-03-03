@@ -1,58 +1,103 @@
 import React, { useLayoutEffect } from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
+//Personal feed component would go here
+function FeedScreen() {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.text}>Welcome to the personal feed page!</Text>
+    </View>
+  );
+}
+
+//Play date component
 function PlayDateScreen() {
   return (
-    <View>
-      <Text>Welcome to the play date page!</Text>
+    <View style={styles.container}>
+      <Text style={styles.text}>Welcome to the play date page!</Text>
     </View>
   );
 }
 
+//Forums component 
 function ForumsScreen() {
   return (
-    <View>
-      <Text>Welcome to the forums page!</Text>
+    <View style={styles.container}>
+      <Text style={styles.text}>Welcome to the forums page!</Text>
     </View>
   );
 }
 
+//Create post component 
 function CreatePostScreen() {
   return (
-    <View>
-      <Text>Welcome to the post creation page!</Text>
+    <View style={styles.container}>
+      <Text style={styles.text}>Welcome to the post creation page!</Text>
     </View>
   );
 }
 
+//Caldendar component 
 function CalendarScreen() {
   return (
-    <View>
-      <Text>Welcome to the calendar page!</Text>
+    <View style={styles.container}>
+      <Text style={styles.text}>Welcome to the calendar page!</Text>
     </View>
   );
 }
 
+//Trip planner component
 function TripPlannerScreen() {
   return (
-    <View>
-      <Text>Welcome to the trip planner page!</Text>
+    <View style={styles.container}>
+      <Text style={styles.text}>Welcome to the trip planner page!</Text>
     </View>
   );
 }
 
+//Styling temporary text
+const styles = StyleSheet.create({
+  container: {
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+  },
+  text: {
+    fontSize: 20, 
+  },
+});
+
+//Bottom tab navigator
 const Tab = createBottomTabNavigator();
 
-export default function PersonalFeed({ navigation }) {
-  
+export default function PersonalFeedNav({ navigation }) {
+
+  //Create the PlayPals header
   useLayoutEffect(() => {
     navigation.setOptions({
       title: "PlayPals",
       headerStyle: { backgroundColor: "#E4E4E4" },
+      headerRight: () => (
+        <TouchableOpacity onPress={() => navigation.navigate("Chats")}>
+          <Image 
+            source={require('../assets/chat.png')} // Load the chat.png image
+            style={{ width: 30, height: 30, marginRight: 10 }} // Adjust the size and margin as needed
+          />
+        </TouchableOpacity>
+      ),
+      headerLeft: () => (
+        <TouchableOpacity onPress={() => navigation.navigate("Profile")}> 
+          <Image 
+            source={require('../assets/profile.png')} // Load the profile image later this will be a users pfp
+            style={{ width: 30, height: 30, marginLeft: 10 }} // Adjust the size and margin as needed
+          />
+        </TouchableOpacity>
+      ),
     });
   }, [navigation]);
-  
+
+  //the tab navigator for the different tabs at the bottom of screen
   return (
       <Tab.Navigator
         screenOptions={({route}) => ({
@@ -60,13 +105,17 @@ export default function PersonalFeed({ navigation }) {
           tabBarActiveTintColor: '#007AFF',
           tabBarInactiveTintColor: '#000000',
           tabBarShowLabel: true,
+
+          //Set the icons
           tabBarIcon: ({ color, size }) => {
             let iconSource;
       
-            if (route.name === "Play Date") {
+            if (route.name === "Home") {
+              iconSource = require('../assets/home.png');
+            } else if (route.name === "Play Date") {
               iconSource = require('../assets/paws.png');
-            } else if (route.name === "Forums") {
-              iconSource = require('../assets/forums.png');
+            //} else if (route.name === "Forums") {
+            //  iconSource = require('../assets/forums.png');
             } else if (route.name === "Create Post") {
               iconSource = require('../assets/create.png');
             } else if (route.name === "Calendar") {
@@ -74,7 +123,8 @@ export default function PersonalFeed({ navigation }) {
             } else if (route.name === "Trip Planner") {
               iconSource = require('../assets/map.png');
             }
-      
+            
+            //Icon styling
             return (
               <Image
                 source={iconSource}
@@ -85,11 +135,12 @@ export default function PersonalFeed({ navigation }) {
           },
         })}
       >
-        <Tab.Screen name="Play Date" component={PlayDateScreen} />
-        <Tab.Screen name="Forums" component={ForumsScreen} />
-        <Tab.Screen name="Create Post" component={CreatePostScreen} />
-        <Tab.Screen name="Calendar" component={CalendarScreen} />
-        <Tab.Screen name="Trip Planner" component={TripPlannerScreen} />
+        <Tab.Screen name="Home" component={FeedScreen} options={{headerShown: false}} />
+        <Tab.Screen name="Play Date" component={PlayDateScreen} options={{headerShown: false}} />
+        
+        <Tab.Screen name="Create Post" component={CreatePostScreen} options={{headerShown: false}} />
+        <Tab.Screen name="Calendar" component={CalendarScreen} options={{headerShown: false}} />
+        <Tab.Screen name="Trip Planner" component={TripPlannerScreen} options={{headerShown: false}} />
       </Tab.Navigator>
   );
 }
