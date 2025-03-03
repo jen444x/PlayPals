@@ -1,4 +1,18 @@
-const socket = io('ws://localhost:3000')
+const local = window.location.hostname === 'localhost'
+const prod = window.location.hostname === 'playpals-app.com'
+const test = window.location.hostname.endsWith('.playpals-app.com')
+
+let socketUrl
+
+if (local) {
+    socketUrl = 'ws://localhost:3000'
+} else if (prod || test) {
+    socketUrl = `wss://${window.location.hostname}`
+} else {
+    socketUrl = `ws://localhost:3000`
+}
+
+const socket = io(socketUrl)
 
 const activity = document.querySelector('.activity')
 const msgInput = document.querySelector('input')

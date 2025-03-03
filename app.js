@@ -3,10 +3,8 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-const dotenv = require('dotenv');
 const multer = require('multer');
-const db = require('./sql/config');
-const server = require('./bin/www')
+//const db = require('./sql/config');
 
 const app = express();
 

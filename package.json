@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www"
+    "start_prod": "node ./bin/www mode=production",
+    "start_dev": "node ./bin/www mode=development",
+    "start_dev_local": "node ./bin/www mode=development_local"
   },
   "dependencies": {
     "cookie-parser": "~1.4.4",
