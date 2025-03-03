@@ -8,12 +8,14 @@ const CalendarScreen = () => {
     const { petName } = route.params || {};
     const [selectedDate, setSelectedDate] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);  // Track if we are editing an event
     const [eventDetails, setEventDetails] = useState({
         eventType: '',
         location: '',
         notes: '',
         pet: petName || '',
         time: '',
+        index: null,  // For editing the event
     });
     const [events, setEvents] = useState({});
 
@@ -38,12 +40,39 @@ const CalendarScreen = () => {
             alert('Please fill in all required fields.');
         }
     };
- // Prepare the markedDates object to highlight days with events
- 
+
+    // Handle editing an event
+    const editEvent = () => {
+        const { eventType, location, notes, pet, time, index } = eventDetails;
+        if (selectedDate && eventType.trim() && location.trim() && time.trim()) {
+            const updatedEvents = [...events[selectedDate]];
+            updatedEvents[index] = { eventType, location, notes, pet, time };
+            setEvents((prevEvents) => ({
+                ...prevEvents,
+                [selectedDate]: updatedEvents,
+            }));
+            setEventDetails({ eventType: '', location: '', notes: '', pet: petName || '', time: '', index: null });
+            setIsEditing(false);
+            setModalVisible(false);
+        } else {
+            alert('Please fill in all required fields.');
+        }
+    };
+
+    // Handle deleting an event
+    const deleteEvent = (index) => {
+        const updatedEvents = events[selectedDate].filter((_, i) => i !== index);
+        setEvents((prevEvents) => ({
+            ...prevEvents,
+            [selectedDate]: updatedEvents,
+        }));
+    };
+
+    // Prepare the markedDates object to highlight days with events
     return (
         <View style={styles.container}>
             <Text style={styles.title}>{petName}'s Calendar</Text>
-            
+
             <Calendar
                 onDayPress={(day) => setSelectedDate(day.dateString)}
                 markedDates={{
@@ -66,10 +95,29 @@ const CalendarScreen = () => {
                     <FlatList
                         data={events[selectedDate] || []}
                         keyExtractor={(item, index) => index.toString()}
-                        renderItem={({ item }) => (
+                        renderItem={({ item, index }) => (
                             <View style={styles.eventItem}>
                                 <Text style={styles.eventText}>• {item.eventType} at {item.location} at {item.time}</Text>
                                 {item.notes && <Text style={styles.notesText}>Notes: {item.notes}</Text>}
+                                
+                                <View style={styles.eventActions}>
+                                    <TouchableOpacity 
+                                        style={styles.eventButton} 
+                                        onPress={() => {
+                                            setEventDetails({ ...item, index });
+                                            setIsEditing(true);
+                                            setModalVisible(true);
+                                        }}
+                                    >
+                                        <Text style={styles.eventButtonText}>Edit</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity 
+                                        style={styles.eventButton} 
+                                        onPress={() => deleteEvent(index)}
+                                    >
+                                        <Text style={styles.eventButtonText}>Delete</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
                         )}
                     />
@@ -79,7 +127,7 @@ const CalendarScreen = () => {
                 </>
             )}
 
-            {/* Modal for Adding an Event */}
+            {/* Modal for Adding/Editing an Event */}
             <Modal visible={modalVisible} animationType="slide" transparent>
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
@@ -107,8 +155,11 @@ const CalendarScreen = () => {
                             value={eventDetails.time}
                             onChangeText={(text) => setEventDetails({ ...eventDetails, time: text })}
                         />
-                        <TouchableOpacity style={styles.modalButton} onPress={addEvent}>
-                            <Text style={styles.modalButtonText}>Save Event</Text>
+                        <TouchableOpacity 
+                            style={styles.modalButton} 
+                            onPress={isEditing ? editEvent : addEvent}
+                        >
+                            <Text style={styles.modalButtonText}>{isEditing ? 'Save Changes' : 'Save Event'}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.modalButtonCancel} onPress={() => setModalVisible(false)}>
                             <Text style={styles.modalButtonText}>Cancel</Text>
@@ -153,6 +204,22 @@ const styles = StyleSheet.create({
         color: '#FFFBF2',
         fontSize: 14,
         marginTop: 5,
+    },
+    eventActions: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 10,
+    },
+    eventButton: {
+        backgroundColor: '#6D4C41',
+        padding: 5,
+        borderRadius: 5,
+        marginHorizontal: 5,
+    },
+    eventButtonText: {
+        color: 'white',
+        fontSize: 14,
+        fontWeight: 'bold',
     },
     addButton: {
         backgroundColor: '#E76F51',
