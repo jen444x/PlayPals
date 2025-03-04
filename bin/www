@@ -4,24 +4,20 @@
  * Module dependencies.
  */
 
-var app = require('../app');
+//var app = require('../app');
 var debug = require('debug')('backend:server');
 var http = require('http');
-var path = require('path');
-const dotenv = require('dotenv');
+const config = require('../config');
+const socketIo = require('socket.io')
 
-if (process.env.NODE_ENV === 'dev') {
-  dotenv.config({path: path.join(__dirname, './../.env.dev')});
-} else {
-  dotenv.config({path: path.join(__dirname, './../.env.prod')});
-}
+var app = require('../app');
 
 /**
  * Get port from environment and store in Express.
  */
 
 //Edit the NODEPORT variable in the .env file
-var port = normalizePort(process.env.NODEPORT || '3000');
+var port = normalizePort(config.NODEPORT || '3000');
 app.set('port', port);
 
 /**
@@ -97,3 +93,43 @@ function onListening() {
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
 }
+
+const io = socketIo(server, {
+  cors: {
+    origin: process.env.NODE_ENV === "production"
+      ? false
+      : [`http://localhost:${process.env.NODEPORT}`]
+  }
+})
+
+io.on('connection', socket => {
+  console.log(`User ${socket.id} connected`) //Logging user ID
+
+  // Upon connection - only to user
+  socket.emit("message", "Welcome to Chat App!")
+
+  // Upon connection - to all others
+  socket.broadcast.emit('message', 
+    `User ${socket.id.substring(0,5)} connected`)
+
+  socket.on('message', data => {
+    console.log(data)
+    io.emit('message', `${socket.id.substring(0,5)}: ${data}`) //Send to all connected clients
+  })
+
+  //User disconnects - to others
+  socket.on('disconnect', () => {
+    socket.broadcast.emit('message', 
+      `User ${socket.id.substring(0,5)} disconnected`)
+  })
+
+  //Listen for activity
+  socket.on('activity', (name) => {
+    socket.broadcast.emit('activity', name)
+  })
+})
+
+console.log(`Server running on ${config.DOMAIN} on port ${config.NODEPORT}`);
+console.log(`Using database ${config.DATABASE} from ${config.DB_HOST}`)
+
+module.exports = server
