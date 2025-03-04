@@ -10,6 +10,8 @@ import PersonalFeedScreen from './screens/PersonalFeedScreen';
 import ChatScreen from './screens/ChatScreen';
 import ProfileScreen from './screens/ProfileScreen';
 
+import CalendarScreen from './screens/CalendarScreen';
+
 const Stack = createStackNavigator();
 
 export default function App() {
@@ -25,6 +27,7 @@ export default function App() {
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="Chats" component={ChatScreen} />
         <Stack.Screen name="PersonalFeed" component={PersonalFeedScreen} />
+        <Stack.Screen name="Calendar" component={CalendarScreen} options={{ title: 'Pet Calendar' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
