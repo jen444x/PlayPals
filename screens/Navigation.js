@@ -1,6 +1,7 @@
 import React, { useLayoutEffect } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import CalendarScreen from './CalendarScreen';
 
 //Personal feed component would go here
 function FeedScreen() {
@@ -20,15 +21,6 @@ function PlayDateScreen() {
   );
 }
 
-//Forums component 
-function ForumsScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Welcome to the forums page!</Text>
-    </View>
-  );
-}
-
 //Create post component 
 function CreatePostScreen() {
   return (
@@ -39,11 +31,9 @@ function CreatePostScreen() {
 }
 
 //Caldendar component 
-function CalendarScreen() {
+function CalendarScreenRender() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Welcome to the calendar page!</Text>
-    </View>
+    <CalendarScreen/>
   );
 }
 
@@ -114,8 +104,6 @@ export default function PersonalFeedNav({ navigation }) {
               iconSource = require('../assets/home.png');
             } else if (route.name === "Play Date") {
               iconSource = require('../assets/paws.png');
-            //} else if (route.name === "Forums") {
-            //  iconSource = require('../assets/forums.png');
             } else if (route.name === "Create Post") {
               iconSource = require('../assets/create.png');
             } else if (route.name === "Calendar") {
@@ -136,10 +124,9 @@ export default function PersonalFeedNav({ navigation }) {
         })}
       >
         <Tab.Screen name="Home" component={FeedScreen} options={{headerShown: false}} />
-        <Tab.Screen name="Play Date" component={PlayDateScreen} options={{headerShown: false}} />
-        
+        <Tab.Screen name="Play Date" component={PlayDateScreen} options={{headerShown: false}} /> 
         <Tab.Screen name="Create Post" component={CreatePostScreen} options={{headerShown: false}} />
-        <Tab.Screen name="Calendar" component={CalendarScreen} options={{headerShown: false}} />
+        <Tab.Screen name="Calendar" component={CalendarScreenRender} options={{headerShown: false}} />
         <Tab.Screen name="Trip Planner" component={TripPlannerScreen} options={{headerShown: false}} />
       </Tab.Navigator>
   );
