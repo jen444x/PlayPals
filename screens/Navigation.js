@@ -2,6 +2,7 @@ import React, { useLayoutEffect } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import CalendarScreen from './CalendarScreen';
+import CreatePostScreen from './CreatePostScreen'
 
 //Personal feed component would go here
 function FeedScreen() {
@@ -22,11 +23,9 @@ function PlayDateScreen() {
 }
 
 //Create post component 
-function CreatePostScreen() {
+function CreatePostScreenRender() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Welcome to the post creation page!</Text>
-    </View>
+    <CreatePostScreen/>
   );
 }
 
@@ -125,7 +124,7 @@ export default function PersonalFeedNav({ navigation }) {
       >
         <Tab.Screen name="Home" component={FeedScreen} options={{headerShown: false}} />
         <Tab.Screen name="Play Date" component={PlayDateScreen} options={{headerShown: false}} /> 
-        <Tab.Screen name="Create Post" component={CreatePostScreen} options={{headerShown: false}} />
+        <Tab.Screen name="Create Post" component={CreatePostScreenRender} options={{headerShown: false}} />
         <Tab.Screen name="Calendar" component={CalendarScreenRender} options={{headerShown: false}} />
         <Tab.Screen name="Trip Planner" component={TripPlannerScreen} options={{headerShown: false}} />
       </Tab.Navigator>
