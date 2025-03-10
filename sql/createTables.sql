@@ -119,6 +119,10 @@ CREATE TABLE "publicEvent" (
   "eventLoc" varchar
 );
 
+-- changes jenny made to db
+ALTER TABLE users ALTER COLUMN "createdAt" SET DEFAULT NOW();
+-- 
+
 COMMENT ON COLUMN "post"."body" IS 'Content of the post';
 
 ALTER TABLE "post" ADD FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE;
