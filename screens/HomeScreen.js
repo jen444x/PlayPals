@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, FlatList, ImageBackground } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 const HomeScreen = () => {
     const navigation = useNavigation();
-
-    // Assuming a function fetchUserPets() that fetches the user's pets from an API or database
     const [pets, setPets] = useState([]);
 
     useEffect(() => {
-        // Simulating a fetch operation
         const fetchUserPets = async () => {
-            // This would be replaced by your API call or data fetching logic
-            const userPets = await [
+            // Replace this simulated data with your actual API call or data fetching logic
+            const userPets = [
                 { id: '1', name: 'Buddy', breed: 'Golden Retriever' },
                 { id: '2', name: 'Max', breed: 'Bulldog' },
             ];
@@ -28,7 +25,8 @@ const HomeScreen = () => {
             onPress={() => navigation.navigate('PetProfile', { petId: item.id })}
         >
             <Image
-               // source={require('../assets/pet.png')} // Add a placeholder image for pets
+                // Ensure you have a placeholder pet image in your assets folder
+                source={require('../assets/pet.png')}
                 style={styles.petImage}
             />
             <Text style={styles.petName}>{item.name}</Text>
@@ -37,18 +35,21 @@ const HomeScreen = () => {
     );
 
     return (
-        <View style={styles.container}>
+        <ImageBackground
+            source={require('../assets/petBackground.jpg')}
+            style={styles.container}
+        >
             <Text style={styles.title}>Welcome Back! 🐾</Text>
-            <Text style={styles.subtitle}>Pick a pet profile to manage</Text>
-
-             (
+            <Text style={styles.subtitle}>Pick a pet profile to manage and have some fun!</Text>
+            <TouchableOpacity
+                style={styles.addPetButton}
+                onPress={() => navigation.navigate('AddPet')}
+            >
+                <Text style={styles.addPetText}>Add a Pet</Text>
+            </TouchableOpacity>
+            {pets.length === 0 ? (
                 <View style={styles.noPetsContainer}>
-                    
-                    <TouchableOpacity style={styles.addPetButton}
-                        onPress={() => navigation.navigate('AddPet')}
-                    >
-                        <Text style={styles.addPetText}>Add a Pet</Text>
-                    </TouchableOpacity>
+                    <Text style={styles.noPetsText}>No pets found. Let's add one!</Text>
                 </View>
             ) : (
                 <FlatList
@@ -57,28 +58,31 @@ const HomeScreen = () => {
                     keyExtractor={(item) => item.id}
                     contentContainerStyle={styles.petList}
                 />
-            )
-        </View>
+            )}
+        </ImageBackground>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        padding: 20,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#FFEDD5',
-        padding: 20,
+        resizeMode: 'cover',
     },
     title: {
-        fontSize: 28,
+        fontSize: 30,
         fontWeight: 'bold',
-        color: '#6D4C41',
+        color: '#4A4A4A',
+        textShadowColor: '#fff',
+        textShadowOffset: { width: 2, height: 2 },
+        textShadowRadius: 5,
         marginBottom: 10,
     },
     subtitle: {
         fontSize: 18,
-        color: '#6D4C41',
+        color: '#4A4A4A',
         marginBottom: 20,
     },
     petList: {
@@ -87,12 +91,17 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     petCard: {
-        backgroundColor: '#F4A261',
-        borderRadius: 10,
+        backgroundColor: 'rgba(255, 255, 255, 0.85)',
+        borderRadius: 15,
         marginVertical: 10,
-        padding: 15,
+        padding: 20,
         alignItems: 'center',
         width: '100%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
+        elevation: 5,
     },
     petImage: {
         width: 100,
@@ -101,13 +110,13 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     petName: {
-        fontSize: 20,
+        fontSize: 22,
         fontWeight: 'bold',
-        color: '#6D4C41',
+        color: '#333',
     },
     petBreed: {
         fontSize: 16,
-        color: '#6D4C41',
+        color: '#555',
     },
     noPetsContainer: {
         alignItems: 'center',
@@ -116,19 +125,23 @@ const styles = StyleSheet.create({
     },
     noPetsText: {
         fontSize: 18,
-        color: '#6D4C41',
+        color: '#333',
         marginBottom: 15,
     },
     addPetButton: {
-        backgroundColor: '#E76F51',
+        backgroundColor: '#FF6F61',
         paddingVertical: 12,
         paddingHorizontal: 30,
-        borderRadius: 25,
+        borderRadius: 30,
+        marginBottom: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     addPetText: {
         fontSize: 18,
-        color: 'white',
+        color: '#fff',
         fontWeight: 'bold',
+        marginLeft: 5,
     },
 });
 
