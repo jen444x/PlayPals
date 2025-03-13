@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { 
     View, 
     Text, 
@@ -9,44 +9,59 @@ import {
     Image, 
     ActivityIndicator, 
     ToastAndroid, 
-    Platform 
+    Platform, 
+    LayoutAnimation, 
+    UIManager 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
+import { ThemeContext } from '../ThemeContext'; // adjust the path accordingly
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+// Reusable Setting Row component with icon and switch
+const SettingRow = ({ iconName, label, value, onValueChange, dynamicTextStyle }) => (
+    <View style={styles.settingRow}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name={iconName} size={20} color="#FDD835" style={{ marginRight: 8 }} />
+            <Text style={[styles.settingText, dynamicTextStyle]}>{label}</Text>
+        </View>
+        <Switch value={value} onValueChange={onValueChange} />
+    </View>
+);
 
 const AppSettings = () => {
     const navigation = useNavigation();
-    const [isDarkMode, setIsDarkMode] = useState(false);
+    const { isDarkMode, setIsDarkMode } = useContext(ThemeContext);
     const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(true);
-    const [userName, setUserName] = useState('User Name');
+    const [userName, setUserName] = useState('Fluffy Friend');
     const [userProfileImage, setUserProfileImage] = useState(null);
+    const [userLocation, setUserLocation] = useState('Unknown Location');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Helper function for toast notifications
+    // Helper for toast notifications
     const showToast = (message) => {
         if (Platform.OS === 'android') {
             ToastAndroid.show(message, ToastAndroid.SHORT);
         } else {
-            // For iOS, you might integrate a third-party toast library
             Alert.alert('', message);
         }
     };
 
-    // Save settings locally with a simulated async operation
-    const saveSettings = async () => {
+    // Simulate saving settings with a timeout
+    const saveSettings = () => {
         setIsLoading(true);
-        try {
-            // Simulate saving settings (e.g., AsyncStorage or API call)
+        setTimeout(() => {
             showToast('Settings Saved Successfully!');
-        } catch (error) {
-            console.error('Error saving settings', error);
-            showToast('Failed to save settings');
-        } finally {
             setIsLoading(false);
-        }
+        }, 1500);
     };
 
-    // Reset settings to default values
+    // Reset settings to default values (only updating local state)
     const resetSettings = () => {
         Alert.alert(
             'Reset Settings',
@@ -56,10 +71,12 @@ const AppSettings = () => {
                 { 
                     text: 'OK', 
                     onPress: () => {
+                        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                         setIsDarkMode(false);
                         setIsNotificationsEnabled(true);
-                        setUserName('User Name');
+                        setUserName('Fluffy Friend');
                         setUserProfileImage(null);
+                        setUserLocation('Unknown Location');
                         showToast('Settings Reset to Default');
                     }
                 },
@@ -75,14 +92,13 @@ const AppSettings = () => {
                 showToast('Permission to access media library is required!');
                 return;
             }
-
+            setIsLoading(true);
             let result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsEditing: true,
                 aspect: [1, 1],
                 quality: 1,
             });
-
             if (!result.canceled) {
                 setUserProfileImage(result.assets[0].uri);
                 showToast('Profile image updated');
@@ -90,6 +106,8 @@ const AppSettings = () => {
         } catch (error) {
             console.error('Error picking image: ', error);
             showToast('An error occurred while picking the image');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -98,18 +116,37 @@ const AppSettings = () => {
         navigation.navigate('UserProfile');
     };
 
-    // Dynamic styles for dark mode
+    // Logout functionality with confirmation
+    const logout = () => {
+        Alert.alert(
+            'Logout',
+            'Are you sure you want to logout?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { 
+                    text: 'OK', 
+                    onPress: () => {
+                        // Add your logout logic here (e.g., clearing tokens, updating state, etc.)
+                        // Then navigate to the login screen
+                        navigation.navigate('Login');
+                    }
+                },
+            ]
+        );
+    };
+
+    // Global pet-themed dynamic styles
     const dynamicContainerStyle = {
-        backgroundColor: isDarkMode ? '#333' : '#FFEDD5',
+        backgroundColor: isDarkMode ? '#252526' : '#FFF8E1', // Dark chocolate vs. light cream
     };
 
     const dynamicTextStyle = {
-        color: isDarkMode ? '#fff' : '#6D4C41',
+        color: isDarkMode ? '#0BA385' : '#5D4037', // Light yellow vs. warm brown
     };
 
     return (
         <View style={[styles.container, dynamicContainerStyle]}>
-            <Text style={[styles.title, dynamicTextStyle]}>App Settings</Text>
+            <Text style={[styles.title, dynamicTextStyle]}>Pet App Settings</Text>
 
             {/* User Profile Preview */}
             <TouchableOpacity style={styles.profilePreview} onPress={goToUserProfile}>
@@ -119,27 +156,31 @@ const AppSettings = () => {
                     ) : (
                         <Image source={require('../assets/avatar.png')} style={styles.profileImage} />
                     )}
-                    <Text style={[styles.userName, dynamicTextStyle]}>{userName}</Text>
+                    <View>
+                        <Text style={[styles.userName, dynamicTextStyle]}>{userName}</Text>
+                        <Text style={[styles.userLocation, dynamicTextStyle]}>Location: {userLocation}</Text>
+                    </View>
                 </View>
             </TouchableOpacity>
 
-            {/* Dark Mode Toggle */}
-            <View style={styles.settingRow}>
-                <Text style={[styles.settingText, dynamicTextStyle]}>Dark Mode</Text>
-                <Switch 
-                    value={isDarkMode} 
-                    onValueChange={setIsDarkMode} 
-                />
-            </View>
-
-            {/* Notifications Toggle */}
-            <View style={styles.settingRow}>
-                <Text style={[styles.settingText, dynamicTextStyle]}>Enable Notifications</Text>
-                <Switch 
-                    value={isNotificationsEnabled} 
-                    onValueChange={setIsNotificationsEnabled} 
-                />
-            </View>
+            {/* Settings Options */}
+            <SettingRow 
+                iconName="moon" 
+                label="Dark Mode" 
+                value={isDarkMode} 
+                onValueChange={(value) => {
+                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                    setIsDarkMode(value);
+                }}
+                dynamicTextStyle={dynamicTextStyle}
+            />
+            <SettingRow 
+                iconName="notifications" 
+                label="Enable Notifications" 
+                value={isNotificationsEnabled} 
+                onValueChange={(value) => setIsNotificationsEnabled(value)}
+                dynamicTextStyle={dynamicTextStyle}
+            />
 
             {/* Save Settings */}
             <TouchableOpacity style={styles.saveButton} onPress={saveSettings} disabled={isLoading}>
@@ -157,12 +198,19 @@ const AppSettings = () => {
 
             {/* Change Profile Image */}
             <TouchableOpacity style={styles.pickImageButton} onPress={pickImage}>
-                <Text style={[styles.pickImageButtonText, dynamicTextStyle]}>Change Profile Image</Text>
+                <Text style={[styles.pickImageButtonText,isDarkMode ? { color: '#fff' } : dynamicTextStyle]}>Change Profile Image</Text>
             </TouchableOpacity>
 
             {/* Back Button */}
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                 <Text style={[styles.backButtonText, dynamicTextStyle]}>Go Back</Text>
+            </TouchableOpacity>
+
+            {/* Logout Button */}
+            <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+                <Text style={[styles.logoutButtonText, isDarkMode ? { color: '#fff' } : dynamicTextStyle]}>
+                    Logout
+                </Text>
             </TouchableOpacity>
         </View>
     );
@@ -172,81 +220,109 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         alignItems: 'center',
-        justifyContent: 'center',
         padding: 20,
+        justifyContent: 'center',
     },
     title: {
-        fontSize: 24,
+        fontSize: 26,
         fontWeight: 'bold',
-        marginBottom: 20,
+        marginBottom: 25,
+        letterSpacing: 1.2,
     },
     profilePreview: {
-        marginBottom: 20,
         width: '100%',
         padding: 15,
-        backgroundColor: 'white',
-        borderRadius: 8,
-        borderColor: '#6D4C41',
+        backgroundColor: '#FFECB3',
+        borderRadius: 12,
         borderWidth: 1,
-        alignItems: 'center',
+        borderColor: '#FBC02D',
         flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 25,
     },
     profileInfo: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     profileImage: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        marginRight: 10,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        marginRight: 12,
+        borderWidth: 2,
+        borderColor: '#FBC02D',
     },
     userName: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: 'bold',
+    },
+    userLocation: {
+        fontSize: 16,
+        marginTop: 4,
     },
     settingRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 20,
+        justifyContent: 'space-between',
+        width: '100%',
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#FDD835',
+        marginBottom: 15,
     },
     settingText: {
         fontSize: 18,
-        marginRight: 10,
     },
     saveButton: {
-        backgroundColor: '#F4A261',
-        paddingVertical: 12,
+        backgroundColor: '#FF8A65',
+        paddingVertical: 14,
         paddingHorizontal: 30,
-        borderRadius: 25,
+        borderRadius: 30,
         marginTop: 10,
+        width: '100%',
+        alignItems: 'center',
     },
     saveButtonText: {
         fontSize: 18,
-        color: 'white',
+        color: '#fff',
         fontWeight: 'bold',
     },
     resetButton: {
-        marginTop: 10,
+        marginTop: 15,
     },
     resetButtonText: {
         fontSize: 16,
-        color: '#D9534F',
+        color: '#D32F2F',
     },
     pickImageButton: {
-        marginTop: 10,
-        padding: 10,
-        borderRadius: 25,
-        backgroundColor: '#E9C46A',
+        marginTop: 20,
+        padding: 12,
+        borderRadius: 30,
+        backgroundColor: '#FBC02D',
+        width: '100%',
+        alignItems: 'center',
     },
     pickImageButtonText: {
         fontSize: 16,
+        fontWeight: 'bold',
     },
     backButton: {
-        marginTop: 10,
+        marginTop: 20,
     },
     backButtonText: {
         fontSize: 16,
+    },
+    logoutButton: {
+        marginTop: 20,
+        padding: 12,
+        borderRadius: 30,
+        backgroundColor: '#E57373',
+        width: '100%',
+        alignItems: 'center',
+    },
+    logoutButtonText: {
+        fontSize: 16,
+        fontWeight: 'bold',
     },
 });
 
