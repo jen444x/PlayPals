@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   Alert,
   ToastAndroid,
   Platform,
-  Appearance,
   ScrollView,
   ActivityIndicator,
   LayoutAnimation,
@@ -20,6 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
+import { ThemeContext } from '../ThemeContext'; // Adjust the path as needed
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -36,6 +36,7 @@ const ProfileSchema = Yup.object().shape({
 
 const UserProfile = () => {
   const navigation = useNavigation();
+  const { isDarkMode } = useContext(ThemeContext); // Use the ThemeContext here
 
   // Original profile holds the saved state.
   const [originalProfile, setOriginalProfile] = useState({
@@ -59,14 +60,12 @@ const UserProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Dynamic styling based on system theme (pet-themed colors)
-  const colorScheme = Appearance.getColorScheme();
-  const isDarkMode = colorScheme === 'dark';
+  // Dynamic styling based on ThemeContext (pet-themed colors)
   const dynamicContainerStyle = {
-    backgroundColor: isDarkMode ? '#4E342E' : '#FFF3E0', // Dark brown vs. light orange cream
+    backgroundColor: isDarkMode ? '#252526' : '#FFF3E0', // Dark brown vs. light orange cream
   };
   const dynamicTextStyle = {
-    color: isDarkMode ? '#FFCCBC' : '#5D4037', // Light peach vs. dark brown
+    color: isDarkMode ? '#0BA385' : '#5D4037', // Light peach vs. dark brown
   };
 
   // Helper for toast notifications
@@ -366,7 +365,7 @@ const UserProfile = () => {
 
             {/* Back Button */}
             <TouchableOpacity
-              style={styles.backButton}
+              style={[styles.backButton, { marginLeft: 10 }]}
               onPress={() => navigation.goBack()}
               accessibilityLabel="Go Back Button"
             >
