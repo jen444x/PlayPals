@@ -7,21 +7,27 @@ import HomeScreen from './screens/HomeScreen';
 import PetProfile from './screens/PetProfile';
 import AddPet from './screens/AddPet'; 
 import CalendarScreen from './screens/CalendarScreen';
+import AppSettings from './screens/AppSettings';
+import UserProfile from './screens/UserProfile';
+import { ThemeProvider } from './ThemeContext'; // adjust the path if necessary
 
 const Stack = createStackNavigator();
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Login">
-       
-       <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="SignUp" component={SignUpScreen} />
-        <Stack.Screen name="PetProfile" component={PetProfile} options={{ title: 'Pet Profile' }} />
-        <Stack.Screen name="AddPet" component={AddPet} options={{ title: 'Add a Pet' }} />
-        <Stack.Screen name="Calendar" component={CalendarScreen} options={{ title: 'Pet Calendar' }} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <ThemeProvider>
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName="Login">
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="SignUp" component={SignUpScreen} />
+          <Stack.Screen name="PetProfile" component={PetProfile} options={{ title: 'Pet Profile' }} />
+          <Stack.Screen name="AddPet" component={AddPet} options={{ title: 'Add a Pet' }} />
+          <Stack.Screen name="Calendar" component={CalendarScreen} options={{ title: 'Pet Calendar' }} />
+          <Stack.Screen name="AppSettings" component={AppSettings} options={{ title: 'App Settings' }} />
+          <Stack.Screen name="UserProfile" component={UserProfile} options={{ title: 'User Profile' }} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ThemeProvider>
   );
 }
