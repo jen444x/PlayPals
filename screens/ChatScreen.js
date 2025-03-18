@@ -14,12 +14,14 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   Alert,
+  Image,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import 'react-native-get-random-values';
+import * as ImagePicker from 'expo-image-picker';
 import { v4 as uuidv4 } from 'uuid';
+import Video from 'react-native-video';
 
-// Component to render each message along with its timestamp
+// Component to render each message along with its timestamp and media (if available)
 const MessageItem = ({ item }) => {
   const isCurrentUser = item.sender === 'CurrentUser';
   const dateTimeString = new Date(item.timestamp).toLocaleString();
@@ -29,16 +31,36 @@ const MessageItem = ({ item }) => {
       isCurrentUser ? styles.currentUserMessage : styles.otherUserMessage
     ]}>
       <Text style={styles.messageSender}>{item.sender}</Text>
-      <Text style={styles.messageContent}>{item.content}</Text>
+      { item.content ? (
+        <Text style={styles.messageContent}>{item.content}</Text>
+      ) : null }
+      { item.media && item.media.type === 'image' && (
+        <Image source={{ uri: item.media.uri }} style={styles.mediaImage} />
+      )}
+      { item.media && item.media.type === 'video' && (
+        <Video
+          source={{ uri: item.media.uri }}
+          style={styles.mediaVideo}
+          paused={true}
+          controls={true}
+        />
+      )}
       <Text style={styles.messageTimestamp}>{dateTimeString}</Text>
     </View>
   );
 };
 
-// Component for the message input area
-const MessageInput = ({ inputMessage, setInputMessage, handleSendMessage }) => {
+// Component for the message input area with media attachment support
+const MessageInput = ({ inputMessage, setInputMessage, handleSendMessage, handlePickMedia }) => {
   return (
     <View style={styles.inputContainer}>
+      <TouchableOpacity 
+        style={styles.mediaButton} 
+        onPress={handlePickMedia}
+        accessibilityLabel="Pick Media Button"
+      >
+        <Text style={styles.mediaButtonText}>Media</Text>
+      </TouchableOpacity>
       <TextInput
         style={styles.input}
         placeholder="Type your message..."
@@ -68,7 +90,7 @@ export default function ChatScreen() {
   const flatListRef = useRef(null);
 
   useEffect(() => {
-    // Simulate fetching initial messages with timestamps
+    // Simulate fetching initial messages with timestamps (without media)
     const initialMessages = [
       { id: uuidv4(), sender: 'CurrentUser', content: 'Hi there!', timestamp: new Date().toISOString() },
       { id: uuidv4(), sender: chatUser, content: 'Hello! How are you?', timestamp: new Date().toISOString() },
@@ -96,6 +118,47 @@ export default function ChatScreen() {
         flatListRef.current.scrollToEnd({ animated: true });
       }
     }, 100);
+  };
+
+  // Allow the user to pick images or videos from their library using expo-image-picker
+  const handlePickMedia = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert("Permission Denied", "Permission to access media was not granted.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+    if (result.canceled) {
+      // User canceled media selection
+      return;
+    }
+    // Get the first asset from the assets array
+    const asset = result.assets[0];
+    if (asset) {
+      let mediaType = 'image';
+      if (asset.type === 'video' || asset.uri.match(/\.(mp4|mov)$/i)) {
+        mediaType = 'video';
+      }
+      const newMessage = {
+        id: uuidv4(),
+        sender: 'CurrentUser',
+        content: '', // optional text content; can be added later
+        timestamp: new Date().toISOString(),
+        media: { type: mediaType, uri: asset.uri },
+      };
+      setMessages(prev => [...prev, newMessage]);
+      // Scroll to bottom after attaching media
+      setTimeout(() => {
+        if (flatListRef.current) {
+          flatListRef.current.scrollToEnd({ animated: true });
+        }
+      }, 100);
+    }
   };
 
   return (
@@ -128,6 +191,7 @@ export default function ChatScreen() {
                 inputMessage={inputMessage} 
                 setInputMessage={setInputMessage} 
                 handleSendMessage={handleSendMessage}
+                handlePickMedia={handlePickMedia}
               />
             </View>
           </KeyboardAvoidingView>
@@ -176,7 +240,7 @@ const styles = StyleSheet.create({
     maxWidth: '80%',
   },
   currentUserMessage: {
-    backgroundColor: '#E76F51',
+    backgroundColor: '#EBAB9B',
     alignSelf: 'flex-end',
   },
   otherUserMessage: {
@@ -194,9 +258,21 @@ const styles = StyleSheet.create({
   },
   messageTimestamp: {
     fontSize: 12,
-    color: '#999',
+    color: '#4D4B4B',
     marginTop: 5,
     textAlign: 'right',
+  },
+  mediaImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 10,
+    marginTop: 5,
+  },
+  mediaVideo: {
+    width: 200,
+    height: 200,
+    borderRadius: 10,
+    marginTop: 5,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -204,6 +280,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderTopWidth: 1,
     borderTopColor: '#8D6E63',
+  },
+  mediaButton: {
+    marginRight: 10,
+    padding: 10,
+    backgroundColor: '#E76F51',
+    borderRadius: 25,
+  },
+  mediaButtonText: {
+    color: '#FFF',
+    fontWeight: 'bold',
   },
   input: {
     flex: 1,
