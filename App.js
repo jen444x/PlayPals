@@ -7,6 +7,7 @@ import HomeScreen from './screens/HomeScreen';
 import PetProfile from './screens/PetProfile';
 import AddPet from './screens/AddPet';
 import EditPet from './screens/EditPet';
+import ChatScreen from './screens/ChatScreen';
 import ForumsScreen from './screens/ForumsScreen';
 import NewDiscussion from './screens/NewDiscussion';
 import DiscussionDetail from './screens/DiscussionDetail';
@@ -28,6 +29,7 @@ export default function App() {
           <Stack.Screen name="PetProfile" component={PetProfile} options={{ title: 'Pet Profile' }} />
           <Stack.Screen name="AddPet" component={AddPet} options={{ title: 'Add a Pet' }} />
           <Stack.Screen name="EditPet" component={EditPet} options={{ title: 'Edit Pet' }} />
+          <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'Chat' }}/>
           <Stack.Screen name="Forums" component={ForumsScreen} options={{ title: 'Forums' }} />
           <Stack.Screen name="NewDiscussion" component={NewDiscussion} options={{ title: 'New Discussion' }} />
           <Stack.Screen name="DiscussionDetail" component={DiscussionDetail} options={{ title: 'Discussion Detail' }} />
