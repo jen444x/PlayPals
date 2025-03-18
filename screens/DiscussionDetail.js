@@ -36,7 +36,6 @@ export default function DiscussionDetail() {
         replies: [
           { id: 'r1', author: 'User2', content: 'Great post!' },
           { id: 'r2', author: 'User3', content: 'I agree with your thoughts.' },
-          
         ],
       };
       setDiscussion(discussionData);
@@ -95,6 +94,53 @@ export default function DiscussionDetail() {
     );
   }
 
+  // Render the discussion post as a header for the FlatList
+  const renderDiscussionHeader = () => (
+    <View style={styles.discussionHeader}>
+      <Text style={styles.title}>{discussion.title}</Text>
+      <Text style={styles.author}>Posted by: {discussion.author}</Text>
+      <Text style={styles.content}>{discussion.content}</Text>
+      <Text style={styles.repliesTitle}>Replies</Text>
+    </View>
+  );
+
+  const renderReplyItem = ({ item }) => {
+    // Check if this reply is in edit mode (only for the current user's reply)
+    if (item.author === "CurrentUser" && editingReplyId === item.id) {
+      return (
+        <View style={styles.replyContainer}>
+          <Text style={styles.replyAuthor}>{item.author}:</Text>
+          <TextInput
+            style={[styles.input, styles.editInput]}
+            value={editingReplyContent}
+            onChangeText={setEditingReplyContent}
+            accessibilityLabel="Edit Reply Input"
+          />
+          <View style={styles.editButtonContainer}>
+            <TouchableOpacity style={styles.saveButton} onPress={() => handleSaveReply(item.id)}>
+              <Text style={styles.saveButtonText}>Save</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelEditButton} onPress={handleCancelEdit}>
+              <Text style={styles.cancelEditButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    } else {
+      return (
+        <View style={styles.replyContainer}>
+          <Text style={styles.replyAuthor}>{item.author}:</Text>
+          <Text style={styles.replyContent}>{item.content}</Text>
+          {item.author === "CurrentUser" && (
+            <TouchableOpacity style={styles.editButton} onPress={() => handleEditReply(item)}>
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      );
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ImageBackground source={require('../assets/petBackground.jpg')} style={styles.background}>
@@ -104,49 +150,13 @@ export default function DiscussionDetail() {
           keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
         >
           <View style={styles.overlay}>
-            <Text style={styles.title}>{discussion.title}</Text>
-            <Text style={styles.author}>Posted by: {discussion.author}</Text>
-            <Text style={styles.content}>{discussion.content}</Text>
-            <Text style={styles.repliesTitle}>Replies</Text>
             <FlatList
               data={discussion.replies}
               keyExtractor={(item) => item.id}
-              renderItem={({ item }) => {
-                // Check if this reply is in edit mode (only for the current user's reply)
-                if (item.author === "CurrentUser" && editingReplyId === item.id) {
-                  return (
-                    <View style={styles.replyContainer}>
-                      <Text style={styles.replyAuthor}>{item.author}:</Text>
-                      <TextInput
-                        style={[styles.input, styles.editInput]}
-                        value={editingReplyContent}
-                        onChangeText={setEditingReplyContent}
-                        accessibilityLabel="Edit Reply Input"
-                      />
-                      <View style={styles.editButtonContainer}>
-                        <TouchableOpacity style={styles.saveButton} onPress={() => handleSaveReply(item.id)}>
-                          <Text style={styles.saveButtonText}>Save</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.cancelEditButton} onPress={handleCancelEdit}>
-                          <Text style={styles.cancelEditButtonText}>Cancel</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  );
-                } else {
-                  return (
-                    <View style={styles.replyContainer}>
-                      <Text style={styles.replyAuthor}>{item.author}:</Text>
-                      <Text style={styles.replyContent}>{item.content}</Text>
-                      {item.author === "CurrentUser" && (
-                        <TouchableOpacity style={styles.editButton} onPress={() => handleEditReply(item)}>
-                          <Text style={styles.editButtonText}>Edit</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  );
-                }
-              }}
+              renderItem={renderReplyItem}
+              ListHeaderComponent={renderDiscussionHeader}
+              // Uncomment the following line if you want the header to remain sticky
+              // stickyHeaderIndices={[0]}
               contentContainerStyle={styles.repliesList}
             />
             <View style={styles.replyInputContainer}>
@@ -188,6 +198,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(255,250,240,0.9)',
     padding: 20,
+  },
+  discussionHeader: {
+    marginBottom: 20,
   },
   title: {
     fontSize: 28,
