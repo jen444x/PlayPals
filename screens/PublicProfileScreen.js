@@ -183,15 +183,33 @@ export default function ProfileScreen() {
             <Text style={[styles.statLabel, dynamicTextStyle]}>Likes</Text>
           </View>
         </View>
-        {/* Follow Button for non-current user or Pet Profiles Button for current user */}
+        {/* Action Buttons */}
         { !isCurrentUserProfile ? (
-          <TouchableOpacity 
-            style={[styles.followButton, { backgroundColor: '#fe2c55' }]}
-            accessibilityLabel="Follow Button"
-            accessibilityHint="Tap to follow this user"
-          >
-            <Text style={styles.followButtonText}>Follow</Text>
-          </TouchableOpacity>
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity 
+              style={[styles.followButton, { backgroundColor: '#fe2c55' }]}
+              accessibilityLabel="Follow Button"
+              accessibilityHint="Tap to follow this user"
+            >
+              <Text style={styles.followButtonText}>Follow</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.messageButton, { backgroundColor: '#2196F3' }]}
+              onPress={() => navigation.navigate('Chat', { user: dummyProfile.username })}
+              accessibilityLabel="Send Message Button"
+              accessibilityHint="Tap to send a text message"
+            >
+              <Text style={styles.messageButtonText}>Message</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.petButton, { backgroundColor: '#007AFF' }]}
+              onPress={() => navigation.navigate('PetPublic')}
+              accessibilityLabel="View Pet Profiles Button"
+              accessibilityHint="Tap to view pet profiles"
+            >
+              <Text style={styles.petButtonText}>View Pet Profiles</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <TouchableOpacity 
             style={[styles.petButton, { backgroundColor: '#007AFF' }]}
@@ -297,19 +315,33 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
   },
-  followButton: {
+  actionButtonsContainer: {
+    flexDirection: 'row',
     marginTop: 15,
+  },
+  followButton: {
     paddingVertical: 8,
     paddingHorizontal: 30,
     borderRadius: 5,
+    marginRight: 10,
   },
   followButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
+  messageButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 30,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  messageButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   petButton: {
-    marginTop: 15,
     paddingVertical: 8,
     paddingHorizontal: 30,
     borderRadius: 5,
