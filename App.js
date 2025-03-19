@@ -10,12 +10,14 @@ import EditPet from './screens/EditPet';
 import ConversationsScreen from './screens/ConversationsScreen';
 import PublicProfileScreen from './screens/PublicProfileScreen';
 import ChatScreen from './screens/ChatScreen';
+import PetPublicScreen from './screens/PetPublicScreen';
 import ForumsScreen from './screens/ForumsScreen';
 import NewDiscussion from './screens/NewDiscussion';
 import DiscussionDetail from './screens/DiscussionDetail';
 import CalendarScreen from './screens/CalendarScreen';
 import AppSettings from './screens/AppSettings';
 import UserProfile from './screens/UserProfile';
+import PostFullScreen from './screens/PostFullScreen';
 import { ThemeProvider } from './ThemeContext'; // adjust the path if necessary
 
 const Stack = createStackNavigator();
@@ -34,12 +36,15 @@ export default function App() {
           <Stack.Screen name="Conversations" component={ConversationsScreen} options={{ title: 'Chats' }}/>
           <Stack.Screen name="PublicProfile" component={PublicProfileScreen} options={{ title: 'My Profile' }}/>
           <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'Chat' }}/>
+          <Stack.Screen name ="PetPublic" component={PetPublicScreen} options={{title:'Pet Profiles'}}/>
           <Stack.Screen name="Forums" component={ForumsScreen} options={{ title: 'Forums' }} />
           <Stack.Screen name="NewDiscussion" component={NewDiscussion} options={{ title: 'New Discussion' }} />
           <Stack.Screen name="DiscussionDetail" component={DiscussionDetail} options={{ title: 'Discussion Detail' }} />
           <Stack.Screen name="Calendar" component={CalendarScreen} options={{ title: 'Pet Calendar' }} />
           <Stack.Screen name="AppSettings" component={AppSettings} options={{ title: 'App Settings' }} />
           <Stack.Screen name="UserProfile" component={UserProfile} options={{ title: 'User Profile' }} />
+          <Stack.Screen name="PostFull" component={PostFullScreen} options={{ headerShown: false }} 
+        />
         </Stack.Navigator>
       </NavigationContainer>
     </ThemeProvider>

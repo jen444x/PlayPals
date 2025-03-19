@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// ProfileScreen.js
+import React, { useState, useEffect, useCallback, useMemo, useContext } from 'react';
 import { 
   View, 
   Text, 
@@ -7,119 +8,211 @@ import {
   TouchableOpacity, 
   FlatList, 
   SafeAreaView, 
-  ScrollView,
-  TextInput,
+  TextInput, 
+  Dimensions, 
+  ActivityIndicator 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { ThemeContext } from '../ThemeContext';
+import * as Haptics from 'expo-haptics';
 
-// Dummy data representing a public profile
+// Dummy data representing a user profile 
 const dummyProfile = {
   username: "JaneDoe",
-  avatar: require('../assets/avatar.png'), // Ensure this image exists in your assets folder
-  bio: "Lover of all animals and pet mom to a few adorable fur babies.",
-  petProfile: {
-    petName: "Buddy",
-    petAvatar: require('../assets/pet.png'), // Ensure this image exists in your assets folder
-    petBio: "My loyal companion who loves walks and treats!",
+  avatar: require('../assets/avatar.png'), // Replace with your image asset
+  bio: "Lover of all animals. Follow for daily pet vibes!",
+  stats: {
+    followers: "1.2M",
+    following: "500",
+    likes: "3.4M",
   },
   posts: [
-    { id: '1', image: require('../assets/post1.jpg'), caption: "At the park with Buddy!" },
-    { id: '2', image: require('../assets/post1.jpg'), caption: "Sunday morning cuddles." },
-    { id: '3', image: require('../assets/post1.jpg'), caption: "Playtime in the backyard." },
+    { id: '1', image: require('../assets/post1.jpg') },
+    { id: '2', image: require('../assets/post1.jpg') },
+    { id: '3', image: require('../assets/post1.jpg') },
+    { id: '4', image: require('../assets/post1.jpg') },
+    // Add more posts as needed
   ],
 };
 
-export default function PublicProfileScreen() {
+export default function ProfileScreen() {
   const navigation = useNavigation();
-  const [bio, setBio] = useState(dummyProfile.bio);
-  const [isEditingBio, setIsEditingBio] = useState(false);
+  const { isDarkMode } = useContext(ThemeContext); // Assume ThemeContext provides an isDarkMode boolean
 
-  // Simulated logged-in user.
-  // Replace this with your auth/user context logic.
+  // Dynamic styling based on ThemeContext (pet-themed colors)
+  const dynamicContainerStyle = {
+    backgroundColor: isDarkMode ? '#252526' : '#FFF3E0', // Dark brown vs. light orange cream
+  };
+  const dynamicTextStyle = {
+    color: isDarkMode ? '#0BA385' : '#5D4037', // Light peach vs. dark brown
+  };
+
+  const numColumns = 3;
+  const screenWidth = Dimensions.get('window').width;
+  const imageSize = useMemo(() => screenWidth / numColumns, [screenWidth, numColumns]);
+
+  // Simulated current logged-in user. In a real app, replace with your auth logic.
   const currentUser = "JaneDoe";
   const isCurrentUserProfile = dummyProfile.username === currentUser;
 
+  // State management for bio and API simulation
+  const [bio, setBio] = useState(dummyProfile.bio);
+  const [isEditingBio, setIsEditingBio] = useState(false);
+  const [loading, setLoading] = useState(false);  // Simulate loading state
+  const [error, setError] = useState(null);
+
+  // Simulated API call to fetch profile data
+  useEffect(() => {
+    setLoading(true);
+    // Replace with your actual API call
+    setTimeout(() => {
+      // Simulate success: set loading to false
+      setLoading(false);
+    }, 1000);
+  }, []);
+
   const handleSaveBio = () => {
-    // Add your API call here to persist the updated bio if needed.
+    // In a real app, update the backend here.
     setIsEditingBio(false);
+    // Trigger haptic feedback using Expo Haptics
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
-  const renderPost = ({ item }) => (
-    <View style={styles.postContainer}>
-      <Image source={item.image} style={styles.postImage} />
-      <Text style={styles.postCaption}>{item.caption}</Text>
-    </View>
+  // Inline memoized component for a post item
+  const PostItem = React.memo(({ item, imageSize }) => {
+    return (
+      <TouchableOpacity 
+        style={styles.postWrapper}
+        onPress={() => navigation.navigate('PostFull', { image: item.image })}
+        activeOpacity={0.8}
+        accessibilityLabel="Post item"
+        accessibilityHint="Tap to view full post"
+      >
+        <Image 
+          source={item.image} 
+          style={[styles.postImage, { width: imageSize - 2, height: imageSize - 2 }]} 
+          accessibilityLabel="Post image"
+        />
+      </TouchableOpacity>
+    );
+  });
+
+  // Memoized render function for the FlatList
+  const renderPost = useCallback(
+    ({ item }) => <PostItem item={item} imageSize={imageSize} />,
+    [imageSize]
   );
 
+  // Display loading or error states if needed
+  if (loading) {
+    return (
+      <View style={[styles.centered, dynamicContainerStyle]}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.centered, dynamicContainerStyle]}>
+        <Text style={dynamicTextStyle}>{error}</Text>
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
-        {/* Basic Profile Section */}
-        <View style={styles.profileHeader}>
-          <Image source={dummyProfile.avatar} style={styles.avatar} />
-          <View style={styles.profileInfo}>
-            <Text style={styles.username}>{dummyProfile.username}</Text>
-            {isEditingBio ? (
-              <>
-                <TextInput
-                  style={[styles.bio, styles.bioEditing]}
-                  value={bio}
-                  onChangeText={setBio}
-                  multiline
-                />
-                <TouchableOpacity style={styles.saveButton} onPress={handleSaveBio}>
-                  <Text style={styles.saveButtonText}>Save</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <Text style={styles.bio}>{bio}</Text>
-                {isCurrentUserProfile && (
-                  <TouchableOpacity 
-                    style={styles.editButton} 
-                    onPress={() => setIsEditingBio(true)}
-                    accessibilityLabel="Edit Bio Button"
-                  >
-                    <Text style={styles.editButtonText}>Edit Bio</Text>
-                  </TouchableOpacity>
-                )}
-              </>
-            )}
+    <SafeAreaView style={[styles.container, dynamicContainerStyle]}>
+      {/* Profile Header */}
+      <View style={styles.header}>
+        <Image 
+          source={dummyProfile.avatar} 
+          style={styles.avatar} 
+          accessibilityLabel="User avatar"
+        />
+        <Text style={[styles.username, dynamicTextStyle]}>{dummyProfile.username}</Text>
+        {isEditingBio ? (
+          <>
+            <TextInput
+              style={[styles.bio, styles.bioEditing, dynamicTextStyle, { borderColor: dynamicTextStyle.color }]}
+              value={bio}
+              onChangeText={setBio}
+              placeholder="Add your bio here..."
+              placeholderTextColor={dynamicTextStyle.color}
+              multiline
+              accessibilityLabel="Edit bio text input"
+            />
             <TouchableOpacity 
-              style={styles.messageButton} 
-              onPress={() => navigation.navigate('Chat', { chatUser: dummyProfile.username })}
-              accessibilityLabel="Send Message Button"
+              style={[styles.saveButton, { backgroundColor: '#4CAF50' }]} 
+              onPress={handleSaveBio}
+              accessibilityLabel="Save Bio Button"
+              accessibilityHint="Tap to save your bio"
             >
-              <Text style={styles.messageButtonText}>Send Message</Text>
+              <Text style={styles.saveButtonText}>Save</Text>
             </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <Text style={[styles.bio, dynamicTextStyle]}>
+              {bio || "No bio yet. Click to add one!"}
+            </Text>
+            {isCurrentUserProfile && (
+              <TouchableOpacity 
+                style={[styles.editButton, { backgroundColor: dynamicTextStyle.color }]}
+                onPress={() => setIsEditingBio(true)}
+                accessibilityLabel="Edit Bio Button"
+                accessibilityHint="Tap to edit your bio"
+              >
+                <Text style={styles.editButtonText}>
+                  {bio ? "Edit Bio" : "Add Bio"}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </>
+        )}
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, dynamicTextStyle]}>{dummyProfile.stats.followers}</Text>
+            <Text style={[styles.statLabel, dynamicTextStyle]}>Followers</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, dynamicTextStyle]}>{dummyProfile.stats.following}</Text>
+            <Text style={[styles.statLabel, dynamicTextStyle]}>Following</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, dynamicTextStyle]}>{dummyProfile.stats.likes}</Text>
+            <Text style={[styles.statLabel, dynamicTextStyle]}>Likes</Text>
           </View>
         </View>
-
-        {/* Pet Profile Section */}
-        <View style={styles.petProfile}>
-          <Text style={styles.sectionTitle}>Pet Profile</Text>
-          <View style={styles.petInfo}>
-            <Image source={dummyProfile.petProfile.petAvatar} style={styles.petAvatar} />
-            <View style={styles.petDetails}>
-              <Text style={styles.petName}>{dummyProfile.petProfile.petName}</Text>
-              <Text style={styles.petBio}>{dummyProfile.petProfile.petBio}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Posts Feed Section */}
-        <View style={styles.postsSection}>
-          <Text style={styles.sectionTitle}>Posts</Text>
-          <FlatList
-            data={dummyProfile.posts}
-            keyExtractor={(item) => item.id}
-            renderItem={renderPost}
-            horizontal={true}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.postsList}
-          />
-        </View>
-      </ScrollView>
+        {/* Follow Button for non-current user or Pet Profiles Button for current user */}
+        { !isCurrentUserProfile ? (
+          <TouchableOpacity 
+            style={[styles.followButton, { backgroundColor: '#fe2c55' }]}
+            accessibilityLabel="Follow Button"
+            accessibilityHint="Tap to follow this user"
+          >
+            <Text style={styles.followButtonText}>Follow</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity 
+            style={[styles.petButton, { backgroundColor: '#007AFF' }]}
+            onPress={() => navigation.navigate('PetPublic')}
+            accessibilityLabel="View Pet Profiles Button"
+            accessibilityHint="Tap to view pet profiles"
+          >
+            <Text style={styles.petButtonText}>View Pet Profiles</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      
+      {/* Posts Grid */}
+      <FlatList
+        data={dummyProfile.posts}
+        keyExtractor={(item) => item.id}
+        renderItem={renderPost}
+        numColumns={numColumns}
+        contentContainerStyle={styles.postsContainer}
+        showsVerticalScrollIndicator={false}
+      />
     </SafeAreaView>
   );
 }
@@ -127,126 +220,114 @@ export default function PublicProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF8DC', // Cornsilk background for a warm feel
   },
-  profileHeader: {
-    flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#FAF3E0', // Soft off-white tone
-    borderBottomWidth: 1,
-    borderBottomColor: '#D2691E',
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  header: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#ccc',
+    // Pet-themed extra padding and border style
+    paddingHorizontal: 20,
   },
   avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
-  },
-  profileInfo: {
-    flex: 1,
-    marginLeft: 16,
-    justifyContent: 'center',
+    // Adding a playful border to the avatar
+    borderWidth: 2,
+    borderColor: '#0BA385',
   },
   username: {
-    fontSize: 24,
+    marginTop: 10,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#8B4513', // SaddleBrown for text
+    // Pet-themed font (custom font can be added if available)
+    fontFamily: 'Arial',
   },
   bio: {
-    fontSize: 16,
-    color: '#6D4C41',
-    marginVertical: 8,
+    marginTop: 5,
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
   bioEditing: {
-    borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 5,
     padding: 8,
+    width: '80%',
+    textAlign: 'center',
   },
   editButton: {
-    backgroundColor: '#E76F51',
-    padding: 8,
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 20,
     borderRadius: 20,
-    alignSelf: 'flex-start',
-    marginVertical: 5,
   },
   editButtonText: {
     color: '#FFF',
     fontWeight: 'bold',
   },
   saveButton: {
-    backgroundColor: '#4CAF50',
-    padding: 8,
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 20,
     borderRadius: 20,
-    alignSelf: 'flex-start',
-    marginVertical: 5,
   },
   saveButtonText: {
     color: '#FFF',
     fontWeight: 'bold',
   },
-  messageButton: {
-    backgroundColor: '#E76F51',
-    padding: 10,
-    borderRadius: 25,
-    alignSelf: 'flex-start',
+  statsContainer: {
+    flexDirection: 'row',
+    marginTop: 15,
+  },
+  statItem: {
+    alignItems: 'center',
+    marginHorizontal: 15,
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  statLabel: {
+    fontSize: 12,
+  },
+  followButton: {
+    marginTop: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 30,
+    borderRadius: 5,
+  },
+  followButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  petButton: {
+    marginTop: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 30,
+    borderRadius: 5,
+  },
+  petButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  postsContainer: {
     marginTop: 5,
   },
-  messageButtonText: {
-    color: '#FFF',
-    fontWeight: 'bold',
-  },
-  petProfile: {
-    padding: 16,
-    backgroundColor: '#FFF8DC',
-    borderBottomWidth: 1,
-    borderBottomColor: '#D2691E',
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#8B4513',
-    marginBottom: 8,
-  },
-  petInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  petAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  petDetails: {
-    marginLeft: 16,
-  },
-  petName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#8B4513',
-  },
-  petBio: {
-    fontSize: 14,
-    color: '#6D4C41',
-  },
-  postsSection: {
-    padding: 16,
-    backgroundColor: '#FAF3E0',
-  },
-  postsList: {
-    paddingVertical: 8,
-  },
-  postContainer: {
-    marginRight: 16,
-    alignItems: 'center',
+  postWrapper: {
+    flex: 1,
+    margin: 1,
   },
   postImage: {
-    width: 150,
-    height: 150,
-    borderRadius: 10,
-  },
-  postCaption: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#6D4C41',
+    borderRadius: 2,
+    resizeMode: 'cover',
   },
 });
