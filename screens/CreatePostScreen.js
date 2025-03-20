@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker'
 import { useState, useEffect } from 'react'
-import { View, TouchableOpacity, StyleSheet, Image, Text, Alert, TextInput } from 'react-native'
+import { View, TouchableOpacity, StyleSheet, Image, Text, Alert, TextInput, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback } from 'react-native'
 import { Video } from 'expo-av';
 
 export default function PersonalFeedScreen() {
@@ -62,6 +62,9 @@ export default function PersonalFeedScreen() {
     };
 
     return (
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            
         <View style={styles.container}>
             {/* Display selected image or video if it exists */}
             {/* image && <Image source={{ uri: image }} style={styles.image} /> */}
@@ -123,6 +126,8 @@ export default function PersonalFeedScreen() {
                 </TouchableOpacity>
             </View>
         </View>
+        </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
     )
 }
 
