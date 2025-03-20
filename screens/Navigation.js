@@ -3,6 +3,8 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import CalendarScreen from './CalendarScreen';
 import CreatePostScreen from './CreatePostScreen'
+import ForumsScreen from './ForumsScreen';
+import AppSettings from './AppSettings';
 
 //Personal feed component would go here
 function FeedScreen() {
@@ -68,7 +70,7 @@ export default function PersonalFeedNav({ navigation }) {
       title: "PlayPals",
       headerStyle: { backgroundColor: "#E4E4E4" },
       headerRight: () => (
-        <TouchableOpacity onPress={() => navigation.navigate("Chats")}>
+        <TouchableOpacity onPress={() => navigation.navigate("Conversations")}>
           <Image 
             source={require('../assets/chat.png')} // Load the chat.png image
             style={{ width: 30, height: 30, marginRight: 10 }} // Adjust the size and margin as needed
@@ -103,12 +105,16 @@ export default function PersonalFeedNav({ navigation }) {
               iconSource = require('../assets/home.png');
             } else if (route.name === "Play Date") {
               iconSource = require('../assets/paws.png');
+            } else if (route.name === "Forums") {
+              iconSource = require('../assets/forums.png');
             } else if (route.name === "Create Post") {
               iconSource = require('../assets/create.png');
             } else if (route.name === "Calendar") {
               iconSource = require('../assets/time-and-date.png');
             } else if (route.name === "Trip Planner") {
               iconSource = require('../assets/map.png');
+            } else if (route.name === "Settings") {
+              iconSource = require('../assets/setting.png');
             }
             
             //Icon styling
@@ -123,10 +129,12 @@ export default function PersonalFeedNav({ navigation }) {
         })}
       >
         <Tab.Screen name="Home" component={FeedScreen} options={{headerShown: false}} />
-        <Tab.Screen name="Play Date" component={PlayDateScreen} options={{headerShown: false}} /> 
+        <Tab.Screen name="Play Date" component={PlayDateScreen} options={{headerShown: false}} />
+        <Tab.Screen name="Forums" component={ForumsScreen} options={{headerShown: false}} /> 
         <Tab.Screen name="Create Post" component={CreatePostScreenRender} options={{headerShown: false}} />
         <Tab.Screen name="Calendar" component={CalendarScreenRender} options={{headerShown: false}} />
         <Tab.Screen name="Trip Planner" component={TripPlannerScreen} options={{headerShown: false}} />
+        <Tab.Screen name="Settings" component={AppSettings} options={{headerShown: false}} />
       </Tab.Navigator>
   );
 }

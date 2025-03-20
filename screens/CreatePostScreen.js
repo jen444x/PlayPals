@@ -1,12 +1,16 @@
 import * as ImagePicker from 'expo-image-picker'
 import { useState, useEffect } from 'react'
-import { View, TouchableOpacity, StyleSheet, Image, Text, Alert } from 'react-native'
+import { View, TouchableOpacity, StyleSheet, Image, Text, Alert, TextInput } from 'react-native'
 import { Video } from 'expo-av';
 
 export default function PersonalFeedScreen() {
     // State to store the selected image URI
     const [image, setImage] = useState('')
     const [media, setMedia] = useState(null);
+    // State for caption
+    const [caption, setCaption] = useState('');
+
+    const [videoDimensions, setVideoDimensions] = useState({ width: 400, height: 400 });
     
     useEffect(() => {
         // Request permission to access library
@@ -67,17 +71,54 @@ export default function PersonalFeedScreen() {
             {media && media.type === 'video' && (
                 <Video
                     source={{ uri: media.uri }}
-                    style={styles.image}
+                    style={{
+                        width: videoDimensions.width,
+                        height: videoDimensions.height,
+                        aspectRatio: videoDimensions.width / videoDimensions.height,
+                        borderRadius: 10,
+                        marginBottom: 20,
+                    }}
                     useNativeControls
                     resizeMode="contain"
                     isLooping
+                    //onLoad={(data) => {
+                    //    setVideoDimensions({
+                    //        width: data.naturalSize.width || 400,
+                    //        height: data.naturalSize.height || 400
+                    //    });
+                    //}}
+                />
+            )}
+            {/* Caption input */}
+            {media && (
+                <TextInput
+                    style={styles.captionInput}
+                    placeholder="Enter a caption..."
+                    placeholderTextColor="#999"
+                    value={caption}
+                    onChangeText={(text) => {
+                        if (text.length <= 150) {
+                            setCaption(text);
+                        }
+                    }}
+                    keyboardType="default" 
+                    multiline={true}
+                    autoCorrect={true} 
+                    allowFontScaling={true} 
                 />
             )}
             <View id='buttons' style={styles.buttonContainer}>
                 <TouchableOpacity activeOpacity={0.8} style={styles.button} onPress={ handleSelectImagePress }>
                     <Text style={styles.buttonText}>Select Image</Text>
                 </TouchableOpacity>
-                <TouchableOpacity activeOpacity={0.8} style={styles.button} onPress={ () => setMedia(null) }>
+                <TouchableOpacity 
+                    activeOpacity={0.8} 
+                    style={styles.button} 
+                    onPress={ () => {
+                        setMedia(null); 
+                        setCaption(''); 
+                    }}
+                >
                     <Text style={styles.buttonText}>Delete Image</Text>
                 </TouchableOpacity>
             </View>
@@ -98,6 +139,17 @@ const styles = StyleSheet.create({
         height: 400,
         borderRadius: 10,
         marginBottom: 20,
+    },
+    captionInput: {
+        width: '100%',
+        height: 40,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 5,
+        paddingHorizontal: 10,
+        marginBottom: 10,
+        backgroundColor: 'white',
+        fontFamily: 'System',
     },
     buttonContainer: {
         flexDirection: 'row',

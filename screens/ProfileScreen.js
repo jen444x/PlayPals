@@ -1,11 +1,10 @@
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import ProfileScreen from './PublicProfileScreen';
 
 //Forums component 
-export default function ProfileScreen() {
+export default function ProfileScreenNav() {
   return (
-    <View style={styles.container}>
-        <Text style={styles.text}>Welcome to the profile page!</Text>
-    </View>
+    <ProfileScreen/>
   );
 }
 

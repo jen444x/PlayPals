@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, Button } from 'react-native';
+import { View, Text, Image, StyleSheet, Button, ImageBackground, ActivityIndicator } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 
 const PetProfile = () => {
@@ -7,18 +7,18 @@ const PetProfile = () => {
     const navigation = useNavigation();
     const { petId } = route.params;
 
-    // Assuming a function fetchPetDetails() that fetches pet details by ID
     const [petDetails, setPetDetails] = useState(null);
 
     useEffect(() => {
         const fetchPetDetails = async () => {
-            // This would be replaced with your API call
+            // Simulated API call: replace this with your actual API call
             const details = {
                 id: petId,
                 name: 'Buddy',
                 breed: 'Golden Retriever',
                 age: 3,
-               // profileImage: require('../assets/pet-placeholder.png'),
+                birthday: '2019-06-15', // Use a string date or a Date object as needed
+                profileImage: 'https://example.com/path-to-pet-image.jpg',
             };
             setPetDetails(details);
         };
@@ -28,50 +28,98 @@ const PetProfile = () => {
 
     if (!petDetails) {
         return (
-            <View style={styles.container}>
-                <Text>Loading...</Text>
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#6D4C41" />
+                <Text style={styles.loadingText}>Loading pet details...</Text>
             </View>
         );
     }
 
-    return (
-        <View style={styles.container}>
-            <Image source={petDetails.profileImage} style={styles.petImage} />
-            <Text style={styles.petName}>{petDetails.name}</Text>
-            <Text style={styles.petDetails}>Breed: {petDetails.breed}</Text>
-            <Text style={styles.petDetails}>Age: {petDetails.age}</Text>
+    // If a profileImage URL is provided, use it; otherwise, fallback to a local placeholder
+    const imageSource = petDetails.profileImage
+        ? { uri: petDetails.profileImage }
+        : require('../assets/pet-placeholder.png');
 
-            <Button
-                title="Edit Profile"
-                onPress={() => navigation.navigate('EditPet', { petId: petDetails.id })}
-            />
-        </View>
+    // Safely format the birthday if available
+    const formattedBirthday = petDetails.birthday
+        ? new Date(petDetails.birthday).toLocaleDateString()
+        : 'Not Provided';
+
+    return (
+        <ImageBackground
+            source={require('../assets/petBackground.jpg')}
+            style={styles.background}
+        >
+            <View style={styles.container}>
+                <Image source={imageSource} style={styles.petImage} />
+                <Text style={styles.petName}>{petDetails.name}</Text>
+                <Text style={styles.petDetails}>Breed: {petDetails.breed}</Text>
+                <Text style={styles.petDetails}>Age: {petDetails.age}</Text>
+                <Text style={styles.petDetails}>Birthday: {formattedBirthday}</Text>
+                <View style={styles.buttonContainer}>
+                    <Button
+                        title="Edit Profile"
+                        onPress={() => navigation.navigate('EditPet', { petId: petDetails.id })}
+                        color="#E76F51"
+                    />
+                </View>
+            </View>
+        </ImageBackground>
     );
 };
 
 const styles = StyleSheet.create({
+    background: {
+        flex: 1,
+        resizeMode: 'cover',
+    },
     container: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#FFEDD5',
+        backgroundColor: 'rgba(255, 255, 255, 0.85)',
+        margin: 20,
+        borderRadius: 15,
         padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     petImage: {
         width: 150,
         height: 150,
         borderRadius: 75,
+        borderWidth: 3,
+        borderColor: '#FF6F61',
         marginBottom: 20,
     },
     petName: {
         fontSize: 28,
         fontWeight: 'bold',
         color: '#6D4C41',
+        marginBottom: 10,
+        textShadowColor: '#fff',
+        textShadowOffset: { width: 2, height: 2 },
+        textShadowRadius: 3,
     },
     petDetails: {
         fontSize: 18,
         color: '#6D4C41',
         marginVertical: 5,
+    },
+    buttonContainer: {
+        marginTop: 20,
+        width: '60%',
+        borderRadius: 25,
+        overflow: 'hidden',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#FFEDD5',
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 18,
+        color: '#6D4C41',
     },
 });
 
