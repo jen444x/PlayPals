@@ -30,7 +30,7 @@ export default function App() {
     <ThemeProvider>
       <NavigationContainer>
         <Stack.Navigator initialRouteName="Login">
-          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="PetHome" component={HomeScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="SignUp" component={SignUpScreen} />
           <Stack.Screen name="PetProfile" component={PetProfile} options={{ title: 'Pet Profile' }} />

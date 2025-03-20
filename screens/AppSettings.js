@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemeContext } from '../ThemeContext'; // adjust the path accordingly
+import HomeScreen from './HomeScreen';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -202,7 +203,7 @@ const AppSettings = () => {
             </TouchableOpacity>
 
             {/* Back Button */}
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('PetHome')}>
                 <Text style={[styles.backButtonText, dynamicTextStyle]}>Go Back</Text>
             </TouchableOpacity>
 
