@@ -63,6 +63,13 @@ const PetProfile = () => {
                         color="#E76F51"
                     />
                 </View>
+                <View style={styles.buttonContainer}>
+                    <Button
+                        title="Go to Nav"
+                        onPress={() => navigation.navigate('Navigation')}
+                        color="#E76F51"
+                    />
+                </View>
             </View>
         </ImageBackground>
     );

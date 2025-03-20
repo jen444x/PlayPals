@@ -15,7 +15,7 @@ export default function LoginScreen({ navigation }) {
 
     // Replace this with real authentication logic (API call, etc.)
     if (email === "Test@example.com" && password === "1234") {
-      navigation.navigate('Navigation');  // Navigate to Home on successful login
+      navigation.navigate('Home');  // Navigate to Home on successful login
     } else {
       Alert.alert("Error", "Invalid credentials");
     }
