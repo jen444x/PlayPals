@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Image } from 'react-native';
+import { Platform } from 'react-native';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,KeyboardAvoidingView, 
   TouchableWithoutFeedback, Keyboard} from 'react-native';
 
@@ -7,24 +8,44 @@ export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert("Error", "Please enter both email and password.");
       return;
     }
 
-    // Replace this with real authentication logic (API call, etc.)
-    if (email === "Test@example.com" && password === "1234") {
-      navigation.navigate('PetHome');  // Navigate to Home on successful login
-    } else {
-      Alert.alert("Error", "Invalid credentials");
+    try {
+      const response = await fetch('https://test2.playpals-app.com/api/auth/loginUser', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await response.json();
+
+      if (response.ok) {
+        navigation.navigate('PetHome');
+      } else {
+        Alert.alert("Error", "Invalid credentials");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      Alert.alert("Error", "Something went wrong. Please try again.");
     }
+      // Replace this with real authentication logic (API call, etc.)
+      //if (email === "Test@example.com" && password === "1234") {
+      //  navigation.navigate('PetHome');  // Navigate to Home on successful login
+      //} else {
+      //  Alert.alert("Error", "Invalid credentials");
+      //}
   };
 
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}> 
+      <TouchableWithoutFeedback onPress={Platform.OS === 'web' ? null : Keyboard.dismiss}>
    
    <View style={styles.container}>
       <Image source = {require('../assets/pet_logo.png')} style={styles.logo}/>
