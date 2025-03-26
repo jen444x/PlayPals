@@ -2,6 +2,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { useState, useEffect } from 'react'
 import { View, TouchableOpacity, StyleSheet, Image, Text, Alert, TextInput, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback } from 'react-native'
 import { Video } from 'expo-av';
+import { Dimensions } from 'react-native';
 
 export default function PersonalFeedScreen() {
     // State to store the selected image URI
@@ -11,7 +12,8 @@ export default function PersonalFeedScreen() {
     const [caption, setCaption] = useState('');
 
     const [videoDimensions, setVideoDimensions] = useState({ width: 400, height: 400 });
-    
+    const screenWidth = Dimensions.get('window').width;
+
     useEffect(() => {
         // Request permission to access library
         (async () => {
@@ -84,12 +86,25 @@ export default function PersonalFeedScreen() {
                     useNativeControls
                     resizeMode="contain"
                     isLooping
-                    //onLoad={(data) => {
-                    //    setVideoDimensions({
-                    //        width: data.naturalSize.width || 400,
-                    //        height: data.naturalSize.height || 400
-                    //    });
-                    //}}
+                    onReadyForDisplay={({ naturalSize }) => {
+                        if (naturalSize?.width && naturalSize?.height) {
+                          const maxWidth = screenWidth * 0.95;
+                          const maxHeight = 400;
+                      
+                          const widthRatio = maxWidth / naturalSize.width;
+                          const heightRatio = maxHeight / naturalSize.height;
+                      
+                          const scaleFactor = Math.min(widthRatio, heightRatio);
+                      
+                          const adjustedWidth = naturalSize.width * scaleFactor;
+                          const adjustedHeight = naturalSize.height * scaleFactor;
+                      
+                          setVideoDimensions({
+                            width: adjustedWidth,
+                            height: adjustedHeight,
+                          });
+                        }
+                      }}
                 />
             )}
             {/* Caption input */}
@@ -147,7 +162,7 @@ const styles = StyleSheet.create({
     },
     captionInput: {
         width: '100%',
-        height: 40,
+        height: 100,
         borderWidth: 1,
         borderColor: '#ccc',
         borderRadius: 5,
