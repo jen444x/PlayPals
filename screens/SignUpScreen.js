@@ -8,6 +8,42 @@ export default function SignUpScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  const handleSignUp = async () => {
+    if (!email || !password || !confirmPassword) {
+      alert("Please fill in all fields.");
+      return;
+    }
+  
+    if (password !== confirmPassword) {
+      alert("Passwords do not match.");
+      return;
+    }
+  
+    try {
+      const response = await fetch('https://test2.playpals-app.com/api/auth/registerUser', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+  
+      const data = await response.json();
+      console.log("Signup response:", data);
+  
+      if (response.ok) {
+        alert("Account created successfully!");
+        navigation.navigate('Login');
+      } else {
+        alert(data.message || "Registration failed.");
+      }
+    } catch (error) {
+      console.error("Signup error:", error);
+      alert("Something went wrong. Please try again.");
+    }
+  };
+  
+
   return (
     <View style={styles.container}>
       <Image source = {require('../assets/pet_logo.png')} style={styles.logo}/>
@@ -37,7 +73,7 @@ export default function SignUpScreen({ navigation }) {
         secureTextEntry
       />
       
-      <TouchableOpacity style={styles.button}>
+      <TouchableOpacity style={styles.button} onPress={handleSignUp}>
         <Text style={styles.buttonText}>Sign Up</Text>
       </TouchableOpacity>
       
