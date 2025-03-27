@@ -71,7 +71,7 @@ const PetProfile = () => {
         >
             <View style={styles.container}>
                 <Image source={imageSource} style={styles.petImage} />
-                <Text style={styles.petName}>{petDetails.name}</Text>
+                <Text style={styles.petName}>{petDetails.petName}</Text>
                 <Text style={styles.petDetails}>Breed: {petDetails.breed}</Text>
                 <Text style={styles.petDetails}>Age: {petDetails.age}</Text>
                 <Text style={styles.petDetails}>Birthday: {formattedBirthday}</Text>
