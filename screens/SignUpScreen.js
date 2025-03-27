@@ -5,11 +5,12 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-nativ
 
 export default function SignUpScreen({ navigation }) {
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleSignUp = async () => {
-    if (!email || !password || !confirmPassword) {
+    if (!email || !username || !password || !confirmPassword) {
       alert("Please fill in all fields.");
       return;
     }
@@ -25,7 +26,7 @@ export default function SignUpScreen({ navigation }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, username, password }),
       });
   
       const data = await response.json();
@@ -55,6 +56,13 @@ export default function SignUpScreen({ navigation }) {
         placeholderTextColor="#7a7a7a"
         value={email}
         onChangeText={setEmail}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Username"
+        placeholderTextColor="#7a7a7a"
+        value={username}
+        onChangeText={setUsername}
       />
       <TextInput
         style={styles.input}

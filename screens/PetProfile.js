@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, Button, ImageBackground, ActivityIndicator } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PetProfile = () => {
     const route = useRoute();
@@ -12,6 +13,7 @@ const PetProfile = () => {
     useEffect(() => {
         const fetchPetDetails = async () => {
             // Simulated API call: replace this with your actual API call
+            /*
             const details = {
                 id: petId,
                 name: 'Buddy',
@@ -20,7 +22,24 @@ const PetProfile = () => {
                 birthday: '2019-06-15', // Use a string date or a Date object as needed
                 profileImage: 'https://example.com/path-to-pet-image.jpg',
             };
-            setPetDetails(details);
+            */
+            try {
+                console.log("Hello")
+                const userId = await AsyncStorage.getItem('userId'); // or pass it as a prop
+                console.log("User ID:", userId)
+                const response = await fetch(`https://test2.playpals-app.com/api/pets/${userId}/${petId}`);
+            
+                if (!response.ok) {
+                  throw new Error('Failed to fetch pet');
+                }
+            
+                const data = await response.json();
+                setPetDetails(data); // Assuming backend returns { pets: [...] }
+                console.log(data)
+              } catch (error) {
+                console.error('Error fetching pets:', error);
+                Alert.alert('Error', 'Could not load your pets.');
+              }
         };
 
         fetchPetDetails();
