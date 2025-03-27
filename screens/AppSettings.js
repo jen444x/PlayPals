@@ -18,6 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemeContext } from '../ThemeContext'; // adjust the path accordingly
 import HomeScreen from './HomeScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -118,22 +119,21 @@ const AppSettings = () => {
     };
 
     // Logout functionality with confirmation
-    const logout = () => {
-        Alert.alert(
-            'Logout',
-            'Are you sure you want to logout?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                { 
-                    text: 'OK', 
-                    onPress: () => {
-                        // Add your logout logic here (e.g., clearing tokens, updating state, etc.)
-                        // Then navigate to the login screen
-                        navigation.navigate('Login');
-                    }
-                },
-            ]
-        );
+    const handleLogout = async () => {
+        try {
+            await AsyncStorage.removeItem('token');
+            await AsyncStorage.removeItem('userId');
+            // Remove any other saved info like email, username, etc.
+            
+            // Navigate to Login screen
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+          } catch (error) {
+            console.error("Logout error:", error);
+            Alert.alert("Error", "Unable to log out.");
+          }
     };
 
     // Global pet-themed dynamic styles
@@ -208,7 +208,7 @@ const AppSettings = () => {
             </TouchableOpacity>
 
             {/* Logout Button */}
-            <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                 <Text style={[styles.logoutButtonText, isDarkMode ? { color: '#fff' } : dynamicTextStyle]}>
                     Logout
                 </Text>
