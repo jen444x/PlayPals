@@ -5,13 +5,12 @@ import CalendarScreen from './CalendarScreen';
 import CreatePostScreen from './CreatePostScreen'
 import ForumsScreen from './ForumsScreen';
 import AppSettings from './AppSettings';
+import FeedScreen from './FeedScreen'; 
 
 //Personal feed component would go here
-function FeedScreen() {
+function FeedScreenRender() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Welcome to the personal feed page!</Text>
-    </View>
+    <FeedScreen/>
   );
 }
 

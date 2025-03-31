@@ -21,6 +21,7 @@ import CalendarScreen from './screens/CalendarScreen';
 import AppSettings from './screens/AppSettings';
 import UserProfile from './screens/UserProfile';
 import PostFullScreen from './screens/PostFullScreen';
+import FeedScreen from './screens/FeedScreen'; 
 import { ThemeProvider } from './ThemeContext'; // adjust the path if necessary
 
 const Stack = createStackNavigator();
@@ -49,6 +50,7 @@ export default function App() {
           <Stack.Screen name="Calendar" component={CalendarScreen} options={{ title: 'Pet Calendar' }} />
           <Stack.Screen name="AppSettings" component={AppSettings} options={{ title: 'App Settings' }} />
           <Stack.Screen name="UserProfile" component={UserProfile} options={{ title: 'User Profile' }} />
+          <Stack.Screen name="Feed" component={FeedScreen} options={{ title: 'Feed' }} /> 
           <Stack.Screen name="PostFull" component={PostFullScreen} options={{ headerShown: false }} 
         />
         </Stack.Navigator>

@@ -235,8 +235,8 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   placeholderImage: {
-    width: 180,
-    height: 180,
+    width: 300,
+    height: 300,
     marginBottom: 20,
   },
   placeholderTitle: {
