@@ -4,7 +4,8 @@ var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 const multer = require("multer");
-//const db = require('./sql/config');
+const auth = require("./middleware/auth");
+const cors = require("cors");
 
 const app = express();
 
@@ -16,7 +17,24 @@ app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+//app.use(cors());
 app.use(express.static(path.join(__dirname, "public")));
+
+app.use(cors({
+  origin: [
+    'http://localhost:8081',
+    'http://localhost:19006',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'https://playpals-app.com',
+    'https://test1.playpals-app.com',
+    'https://test2.playpals-app.com',
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}));
 
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/api/users");
@@ -24,8 +42,8 @@ var postsRouter = require("./routes/api/posts");
 var apiForumRouter = require("./routes/api/forum");
 var pagesRouter = require("./routes/pages/pages");
 var forumRouter = require("./routes/pages/forum");
-var registerRouter = require("./routes/api/register");
-var loginRouter = require("./routes/api/login");
+var petsRouter = require("./routes/api/pets");
+var authRouter = require("./routes/api/auth");
 
 app.use("/", indexRouter);
 app.use("/api/users", usersRouter);
@@ -33,8 +51,8 @@ app.use("/api/posts", postsRouter);
 app.use("/api/forum", apiForumRouter);
 app.use("/", pagesRouter);
 app.use("/forum", forumRouter);
-app.use("/api/register", registerRouter);
-app.use("/api/login", loginRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/pets", petsRouter);
 
 app.use((req, res, next) => {
   console.log(`Request received: ${req.path}`);
