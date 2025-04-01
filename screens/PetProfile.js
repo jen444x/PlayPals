@@ -27,7 +27,7 @@ const PetProfile = () => {
                 console.log("Hello")
                 const userId = await AsyncStorage.getItem('userId'); // or pass it as a prop
                 console.log("User ID:", userId)
-                const response = await fetch(`https://test2.playpals-app.com/api/pets/${userId}/${petId}`);
+                const response = await fetch(`${BASE_URL}api/pets/${userId}/${petId}`);
             
                 if (!response.ok) {
                   throw new Error('Failed to fetch pet');

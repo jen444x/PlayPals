@@ -104,7 +104,7 @@ export default function PersonalFeedScreen() {
       formData.append('caption', caption);
       formData.append('mediaType', media.type);
 
-      const response = await fetch(`https://test2.playpals-app.com/api/posts/submitFeedPost/${userId}`, {
+      const response = await fetch(`${BASE_URL}api/posts/submitFeedPost/${userId}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

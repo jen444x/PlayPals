@@ -80,7 +80,7 @@ const AddPet = () => {
 
             // Simulate an API call delay (replace with actual API call)
             // await new Promise((resolve) => setTimeout(resolve, 2000));
-            const response = await fetch(`https://test2.playpals-app.com/api/pets/${userId}`, {
+            const response = await fetch(`${BASE_URL}api/pets/${userId}`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',

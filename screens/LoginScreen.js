@@ -16,7 +16,7 @@ export default function LoginScreen({ navigation }) {
     }
 
     try {
-      const response = await fetch('https://test2.playpals-app.com/api/auth/loginUser', {
+      const response = await fetch(`${BASE_URL}api/auth/loginUser`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

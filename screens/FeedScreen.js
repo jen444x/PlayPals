@@ -45,7 +45,7 @@ export default function FeedScreen() {
   const fetchFeed = async () => {
     try {
       const userId = await AsyncStorage.getItem('userId');
-      const response = await fetch(`https://test2.playpals-app.com/api/posts/getPosts/${userId}`);
+      const response = await fetch(`${BASE_URL}api/posts/getPosts/${userId}`);
       const data = await response.json();
       setFeedData(data);
     } catch (error) {
