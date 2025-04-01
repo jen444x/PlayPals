@@ -16,6 +16,9 @@ import {
   Platform
 } from 'react-native';
 import { Video } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import mime from 'mime';
 
 export default function PersonalFeedScreen() {
   const [media, setMedia] = useState(null);
@@ -78,13 +81,49 @@ export default function PersonalFeedScreen() {
     if (!media) return;
     setIsUploading(true);
     try {
+      const userId = await AsyncStorage.getItem('userId');
+      const token = await AsyncStorage.getItem('token');
+      const uri = media.uri;
+      const fileType = mime.getType(uri);
+      const fileName = uri.split('/').pop();
+
+      const formData = new FormData();
+
+      if (Platform.OS == 'web') {
+        const response = await fetch(uri);
+        const blob = await response.blob();
+  
+        formData.append('media', blob, fileName);
+      } else {
+        formData.append('media', {
+          uri,
+          name: fileName,
+          type: fileType
+        })
+      }
+      formData.append('caption', caption);
+      formData.append('mediaType', media.type);
+
+      const response = await fetch(`https://test2.playpals-app.com/api/posts/submitFeedPost/${userId}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const result = await response.json();
+
       console.log("Uploading media with caption:", caption);
       // Simulate a network request
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      Alert.alert("Success", "Your media was uploaded successfully!");
-      setMedia(null);
-      setCaption('');
-      setErrorMsg(null);
+      if (response.ok) {
+        Alert.alert("Success", "Your media was uploaded successfully!");
+        setMedia(null);
+        setCaption('');
+        setErrorMsg(null);
+      } else {
+        throw new Error(result.message || 'Upload Failed')
+      }
     } catch (error) {
       console.error("Upload error:", error);
       Alert.alert("Upload Failed", "There was an error uploading your media.");

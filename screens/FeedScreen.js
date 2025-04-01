@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { 
   View, 
   FlatList, 
@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { Video } from 'expo-av';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from '../config.js'; // Adjust path as needed
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
@@ -34,8 +36,28 @@ const dummyFeedData = [
 ];
 
 export default function FeedScreen() {
+  console.log("BAse URL" + BASE_URL)
   const navigation = useNavigation();
+  const [feedData, setFeedData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+
+  const fetchFeed = async () => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      const response = await fetch(`https://test2.playpals-app.com/api/posts/getPosts/${userId}`);
+      const data = await response.json();
+      setFeedData(data);
+    } catch (error) {
+      console.error('Error fetching feed:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeed();
+  }, []);
 
   // Use onViewableItemsChanged to update the active index as the user scrolls
   const onViewRef = useRef((viewableItems) => {
@@ -49,9 +71,9 @@ export default function FeedScreen() {
     <View style={[styles.card, { height: screenHeight }]}>
       {item.type === 'image' && (
         <Image 
-          source={item.uri} 
-          style={styles.media} 
-          resizeMode="cover" 
+          source={{ uri: `${BASE_URL}${item.uri}` }} 
+          style={styles.media}
+          resizeMode="cover"
         />
       )}
       {item.type === 'video' && (
@@ -82,7 +104,7 @@ export default function FeedScreen() {
   return (
     <View style={styles.container}>
       <FlatList 
-        data={dummyFeedData}
+        data={feedData}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         pagingEnabled

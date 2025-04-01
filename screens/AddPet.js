@@ -170,7 +170,10 @@ const AddPet = () => {
         value={petBirthday || new Date()}
         mode="date"
         display="default"
-        onChange={handleDateChange}
+        onChange={(event, selectedDate) => {
+            setShowDatePicker(false);
+            if (selectedDate) setPetBirthday(selectedDate);
+          }}
         maximumDate={new Date()}
       />
     )}
