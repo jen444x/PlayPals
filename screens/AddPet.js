@@ -3,6 +3,7 @@ import { View, TextInput, Text, Button, StyleSheet, Platform, ActivityIndicator,
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AddPet = () => {
     const navigation = useNavigation();
@@ -24,8 +25,9 @@ const AddPet = () => {
     };
 
     // Handle date change from the date picker
+    //CHANGED FOR WEB, REVERT IF BROKEN ON IOS
     const handleDateChange = (event, selectedDate) => {
-        setShowDatePicker(Platform.OS === 'ios');
+        setShowDatePicker(false);
         if (selectedDate) {
             setPetBirthday(selectedDate);
         }
@@ -64,6 +66,8 @@ const AddPet = () => {
         setIsLoading(true);
 
         try {
+            const userId = await AsyncStorage.getItem('userId');
+            if (!userId) throw new Error('User ID not found');
             // Calculate pet age based on the selected birthday
             const petAge = calculateAge(petBirthday);
             const newPet = {
@@ -75,10 +79,23 @@ const AddPet = () => {
             };
 
             // Simulate an API call delay (replace with actual API call)
-            await new Promise((resolve) => setTimeout(resolve, 2000));
+            // await new Promise((resolve) => setTimeout(resolve, 2000));
+            const response = await fetch(`https://test2.playpals-app.com/api/pets/${userId}`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newPet),
+              });
 
-            console.log('New pet added:', newPet);
-            setSuccess(true);
+              const data = await response.json();
+
+            if (response.ok) {
+                console.log('New pet added:', newPet);
+                setSuccess(true);
+            } else {
+                Alert.alert('Error', data.message || 'Something went wrong.');
+            } 
 
             // Show a success alert and navigate back after confirmation
             Alert.alert('Success', 'Pet details saved successfully!', [
@@ -127,15 +144,39 @@ const AddPet = () => {
                         Selected: {petBirthday.toLocaleDateString()} (Age: {calculateAge(petBirthday)})
                     </Text>
                 )}
-                {showDatePicker && (
-                    <DateTimePicker
-                        value={petBirthday || new Date()}
-                        mode="date"
-                        display="default"
-                        onChange={handleDateChange}
-                        maximumDate={new Date()}
-                    />
-                )}
+                
+                {Platform.OS === 'web' ? (
+  <TextInput
+    style={styles.input}
+    placeholder="YYYY-MM-DD"
+    value={petBirthday ? petBirthday.toISOString().split('T')[0] : ''}
+    onChangeText={(text) => {
+      const selectedDate = new Date(text);
+      if (!isNaN(selectedDate)) setPetBirthday(selectedDate);
+    }}
+    placeholderTextColor="#8B7E66"
+  />
+) : (
+  <>
+    <View style={styles.dateButton}>
+      <Button
+        title="Select Birthday"
+        onPress={() => setShowDatePicker(true)}
+        color="#FF6F61"
+      />
+    </View>
+    {showDatePicker && (
+      <DateTimePicker
+        value={petBirthday || new Date()}
+        mode="date"
+        display="default"
+        onChange={handleDateChange}
+        maximumDate={new Date()}
+      />
+    )}
+  </>
+)}
+
                 <View style={styles.imageButton}>
                     <Button title="Upload Pet Picture" onPress={pickImage} color="#FF6F61" />
                 </View>

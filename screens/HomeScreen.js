@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, FlatList, ImageBackground } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const HomeScreen = () => {
     const navigation = useNavigation();
@@ -8,12 +9,31 @@ const HomeScreen = () => {
 
     useEffect(() => {
         const fetchUserPets = async () => {
-            // Replace this simulated data with your actual API call or data fetching logic
+            // Replace this simulated data with your actual API call or data fetching logics
+            /*
             const userPets = [
                 { id: '1', name: 'Buddy', breed: 'Golden Retriever' },
                 { id: '2', name: 'Max', breed: 'Bulldog' },
             ];
-            setPets(userPets);
+            */
+            try {
+                console.log("Hello")
+                const userId = await AsyncStorage.getItem('userId'); // or pass it as a prop
+                console.log("Home UserID", userId)
+                const response = await fetch(`https://test2.playpals-app.com/api/pets/${userId}`);
+            
+                if (!response.ok) {
+                  throw new Error('Failed to fetch pets');
+                }
+            
+                const data = await response.json();
+                setPets(data); // Assuming backend returns { pets: [...] }
+                console.log(data)
+              } catch (error) {
+                console.error('Error fetching pets:', error);
+                Alert.alert('Error', 'Could not load your pets.');
+              }
+            //setPets(userPets);
         };
 
         fetchUserPets();
@@ -22,14 +42,14 @@ const HomeScreen = () => {
     const renderPetItem = ({ item }) => (
         <TouchableOpacity
             style={styles.petCard}
-            onPress={() => navigation.navigate('PetProfile', { petId: item.id })}
+            onPress={() => navigation.navigate('PetProfile', { petId: item.petId })}
         >
             <Image
                 // Ensure you have a placeholder pet image in your assets folder
                 source={require('../assets/pet.png')}
                 style={styles.petImage}
             />
-            <Text style={styles.petName}>{item.name}</Text>
+            <Text style={styles.petName}>{item.petName}</Text>
             <Text style={styles.petBreed}>{item.breed}</Text>
         </TouchableOpacity>
     );
@@ -55,7 +75,7 @@ const HomeScreen = () => {
                 <FlatList
                     data={pets}
                     renderItem={renderPetItem}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item) => item.petId.toString()}
                     contentContainerStyle={styles.petList}
                 />
             )}
