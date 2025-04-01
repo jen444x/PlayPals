@@ -1,3 +1,5 @@
+
+
 CREATE TABLE "users" (
   "id" serial PRIMARY KEY,
   "email" varchar NOT NULL,
@@ -36,7 +38,7 @@ CREATE TABLE "pet" (
   "socialLevel" varchar
 );
 
-CREATE TABLE "calander" (
+CREATE TABLE "calendar" (
   "userId" integer,
   "petId" bigint,
   "dayTime" time,
@@ -81,14 +83,14 @@ CREATE TABLE "forumSubTopic" (
   "subTopicDesc" varchar
 );
 
-CREATE TABLE "forumsThread" (
+CREATE TABLE "forumThread" (
   "threadId" serial PRIMARY KEY,
   "inSubTopicId" integer,
   "threadUser" integer,
   "threadTitle" varchar
 );
 
-CREATE TABLE "forumPosts" (
+CREATE TABLE "forumPost" (
   "forumPostId" bigserial PRIMARY KEY,
   "postUserId" integer,
   "postThreadId" integer,
@@ -117,15 +119,21 @@ CREATE TABLE "publicEvent" (
   "eventLoc" varchar
 );
 
+-- changes jenny made to db
+ALTER TABLE users ALTER COLUMN "createdAt" SET DEFAULT NOW();
+-- 
+
 COMMENT ON COLUMN "post"."body" IS 'Content of the post';
 
-ALTER TABLE "users" ADD FOREIGN KEY ("id") REFERENCES "post" ("userId");
+ALTER TABLE "post" ADD FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "pet" ADD FOREIGN KEY ("userId") REFERENCES "medInfo" ("petId");
 
-ALTER TABLE "calander" ADD FOREIGN KEY ("userId") REFERENCES "users" ("id");
+ALTER TABLE "pet" ADD FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "pet" ADD FOREIGN KEY ("petId") REFERENCES "calander" ("petId");
+ALTER TABLE "calendar" ADD FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "pet" ADD FOREIGN KEY ("petId") REFERENCES "calendar" ("petId");
 
 ALTER TABLE "messages" ADD FOREIGN KEY ("chatId") REFERENCES "chatInfo" ("chatID");
 
@@ -157,6 +165,3 @@ CREATE TABLE "publicEvent_community" (
 ALTER TABLE "publicEvent_community" ADD FOREIGN KEY ("publicEvent_eventId") REFERENCES "publicEvent" ("eventId");
 
 ALTER TABLE "publicEvent_community" ADD FOREIGN KEY ("community_communityId") REFERENCES "community" ("communityId");
-
-
-ALTER TABLE "users" ADD FOREIGN KEY ("id") REFERENCES "pet" ("petId");
