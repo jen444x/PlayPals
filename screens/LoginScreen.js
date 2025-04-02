@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Image } from 'react-native';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from '../config.js';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,KeyboardAvoidingView, 
   TouchableWithoutFeedback, Keyboard} from 'react-native';
+  
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');

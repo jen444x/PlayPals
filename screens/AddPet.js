@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from '../config.js';
 
 const AddPet = () => {
     const navigation = useNavigation();

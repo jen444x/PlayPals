@@ -11,7 +11,7 @@ import {
 import { Video } from 'expo-av';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BASE_URL } from '../config.js'; // Adjust path as needed
+import { BASE_URL } from '../config.js';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
