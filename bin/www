@@ -8,7 +8,7 @@
 var debug = require('debug')('backend:server');
 var http = require('http');
 const config = require('../config');
-const socketIo = require('socket.io')
+const socketHandler = require('../routes/api/chat')
 
 var app = require('../app');
 

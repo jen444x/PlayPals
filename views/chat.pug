@@ -4,8 +4,8 @@ html(lang=en)
     head 
         meta(charset="UTF-8")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
-        link(rel="stylesheet", href="css/style.css")
-        title Chat Test
+        link(rel="stylesheet", href="css/chat.css")
+        title Chat
         script(src="/js/chat.js", defer)
         script(src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.min.js", 
         integrity="sha512-8ExARjWWkIllMlNzVg7JKq9RKWPlJABQUNq6YvAjE/HobctjH/NA+bSiDMDvouBVjp4Wwnf1VP1OEv7Zgjtuxw==" 
@@ -14,8 +14,15 @@ html(lang=en)
     header
         .nav-bar
     body 
-        form#chatForm
-            input#messageInput(type="text" placeholder="Message...", required)
-            button(type="submit") Send
-        ul#messages
-        p(class="activity")
+        main
+            form.form-join
+                input(type="text" id="name" maxlength="8" placeholder="Your Name" size="5")
+                input(type="text" id="room" placeholder="Chat Room" size="5" required)
+                button(id="join" type="submit") Join
+            ul(class="chat-display")
+            p(class="user-list")
+            p(class="room-list")
+            p(class="activity")
+            form.form-msg
+                input#message(type="text" placeholder="Message...", required)
+                button(type="submit") Send
