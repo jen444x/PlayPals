@@ -2,6 +2,7 @@ var express = require("express");
 var router = express.Router();
 const bcrypt = require("bcrypt");
 const pool = require("../../sql/config.js");
+const { Strategy } = require("passport-local");
 
 const checkUserExists = require("../../middleware/checkUserExists.js");
 
