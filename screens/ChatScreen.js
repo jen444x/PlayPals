@@ -1,4 +1,5 @@
 import 'react-native-get-random-values';
+import { io } from "socket.io-client";
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View,
@@ -20,6 +21,17 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { v4 as uuidv4 } from 'uuid';
 import Video from 'react-native-video';
+import { BASE_URL } from '../config';
+
+const host = 'wss://test2.playpals-app.com'
+
+const socket = io(host, {
+  transports: ['websocket'],
+  timeout: 10000,
+  autoConnect: false, 
+});
+
+
 
 // Component to render each message along with its timestamp and media (if available)
 const MessageItem = ({ item }) => {
@@ -83,21 +95,57 @@ const MessageInput = ({ inputMessage, setInputMessage, handleSendMessage, handle
 export default function ChatScreen() {
   const route = useRoute();
   const navigation = useNavigation();
-  const { chatUser } = route.params || { chatUser: 'User2' };
+  const { chatUser, roomName = "default-room", currentUser = "CurrentUser" } = route.params;
+  //const { chatUser } = route.params || { chatUser: 'User2' };
 
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
+  const [typingIndicator, setTypingIndicator] = useState('');
   const flatListRef = useRef(null);
 
   useEffect(() => {
     // Simulate fetching initial messages with timestamps (without media)
-    const initialMessages = [
+    /* const initialMessages = [
       { id: uuidv4(), sender: 'CurrentUser', content: 'Hi there!', timestamp: new Date().toISOString() },
       { id: uuidv4(), sender: chatUser, content: 'Hello! How are you?', timestamp: new Date().toISOString() },
       { id: uuidv4(), sender: 'CurrentUser', content: 'I’m good, thanks! How about you?', timestamp: new Date().toISOString() },
-    ];
-    setMessages(initialMessages);
-  }, [chatUser]);
+    ]; */
+
+    socket.connect();
+    socket.emit("enterRoom", { name: currentUser, room: roomName });
+
+    socket.on("message", (data) => {
+      setMessages((prev) => [...prev, {
+        id: uuidv4(),
+        sender: data.name,
+        content: data.text,
+        timestamp: new Date().toISOString()
+      }]);
+    });
+
+    socket.on("chatHistory", (history) => {
+      const formatted = history.map(msg => ({
+        id: uuidv4(),
+        sender: msg.name,
+        content: msg.text,
+        timestamp: new Date().toISOString(),
+      }));
+      setMessages((prev) => [...prev, ...formatted]);
+    });
+
+    socket.on("activity", (name) => {
+      if (name !== currentUser) {
+        setTypingIndicator(`${name} is typing...`);
+        setTimeout(() => setTypingIndicator(''), 3000);
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+
+    //setMessages(initialMessages);
+  }, [roomName]);
 
   const handleSendMessage = () => {
     if (!inputMessage.trim()) {
@@ -110,6 +158,12 @@ export default function ChatScreen() {
       content: inputMessage,
       timestamp: new Date().toISOString(),
     };
+
+    socket.emit("message", {
+      name: currentUser,
+      text: inputMessage,
+    });
+
     setMessages(prev => [...prev, newMessage]);
     setInputMessage('');
     // Scroll to the bottom after sending a message
@@ -118,6 +172,10 @@ export default function ChatScreen() {
         flatListRef.current.scrollToEnd({ animated: true });
       }
     }, 100);
+  };
+
+  const handleTyping = () => {
+    socket.emit('activity', currentUser);
   };
 
   // Allow the user to pick images or videos from their library using expo-image-picker
@@ -177,6 +235,7 @@ export default function ChatScreen() {
               <View style={styles.header}>
                 <Text style={styles.headerTitle}>Chat with {chatUser}</Text>
               </View>
+              <Text style={{ textAlign: 'center', color: 'gray' }}>{typingIndicator}</Text>
               <FlatList
                 ref={flatListRef}
                 data={messages}
@@ -189,7 +248,10 @@ export default function ChatScreen() {
               />
               <MessageInput 
                 inputMessage={inputMessage} 
-                setInputMessage={setInputMessage} 
+                setInputMessage={text => {
+                  setInputMessage(text);
+                  handleTyping();
+                }}
                 handleSendMessage={handleSendMessage}
                 handlePickMedia={handlePickMedia}
               />
