@@ -9,9 +9,16 @@ router.use("/:userId", checkUserExists);
 
 // ADD A PET
 router.post("/:userId", async (req, res) => {
-  const breed = req.body.breed;
   const name = req.body.name;
+  const breed = req.body.breed;
+  const birthday = req.body.birthday;
   const userId = req.params.userId;
+
+  // If birthday is provided, convert to a Date object
+  let parsedBirthday = null;
+  if (birthday) {
+    parsedBirthday = new Date(birthday);
+  }
 
   // make sure a values were entered
   if (!name) {
@@ -42,8 +49,8 @@ router.post("/:userId", async (req, res) => {
   // CREATE A PET
   try {
     const newPet = await pool.query(
-      `INSERT INTO pets ("petName", breed, "userId") VALUES ($1, $2, $3) RETURNING *`,
-      [name, breed, userId]
+      `INSERT INTO pets ("petName", breed, "userId", birthday) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [name, breed, userId, parsedBirthday]
     );
 
     res.status(201).json(newPet.rows[0]);
@@ -74,10 +81,10 @@ router.get("/:userId", async (req, res) => {
       userId,
     ]);
 
-    // // check if user has no pets
-    // if (pets.rows.length === 0) {
-    //   return res.status(404).json({ message: "No pets found for this user" });
-    // }
+    // check if user has no pets
+    if (pets.rows.length === 0) {
+      return res.status(200).json([]); // just return an empty array
+    }
     return res.status(200).json(pets.rows);
   } catch (error) {
     console.log("Error fetching user pets:", error.message);
@@ -116,22 +123,40 @@ router.put("/:userId/:petId", async (req, res) => {
   const userId = req.params.userId;
   const petId = req.params.petId;
 
-  let { name, breed } = req.body;
-
+  const { petName, breed, birthday, image } = req.body;
+  ////// add images
   // check values were provided
-  if (!name && !breed) {
+  if (!petName && !breed && !birthday) {
     return res.status(400).json({ message: "No fields provided to update" });
   }
 
-  // check pet exists
   try {
-    const pet = await pool.query('SELECT * FROM pets WHERE "petId" = $1', [
-      petId,
-    ]);
+    // Check for duplicate pet name (same user, different pet)
+    const duplicateCheck = await pool.query(
+      `SELECT * FROM pets WHERE "userId" = $1 AND "petName" = $2 AND "petId" != $3`,
+      [userId, petName, petId]
+    );
 
-    if (pet.rows.length === 0) {
-      return res.status(404).json({ message: "Pet not found." });
+    if (duplicateCheck.rows.length > 0) {
+      return res
+        .status(409)
+        .json({ message: "You already have another pet with this name." });
     }
+
+    // check they dont have another pet named the new name
+    // update pet
+    const result = await pool.query(
+      `UPDATE pets SET "petName" = $1, "breed" = $2, "birthday" = $3 WHERE "petId" = $4 AND "userId" = $5 RETURNING *`,
+      [petName, breed, birthday, petId, userId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Pet not found or unauthorized" });
+    }
+
+    res
+      .status(200)
+      .json({ message: "Pet updated successfully", pet: result.rows[0] });
   } catch (error) {
     console.log("Error checking pet:", error.message);
     return res
