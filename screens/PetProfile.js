@@ -1,6 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, Button, ImageBackground, ActivityIndicator } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import React, { useState } from 'react';
+import {
+    View,
+    Text,
+    Image,
+    StyleSheet,
+    Button,
+    ImageBackground,
+    ActivityIndicator,
+    Alert,
+} from 'react-native';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PetProfile = () => {
@@ -10,40 +19,29 @@ const PetProfile = () => {
 
     const [petDetails, setPetDetails] = useState(null);
 
-    useEffect(() => {
-        const fetchPetDetails = async () => {
-            // Simulated API call: replace this with your actual API call
-            /*
-            const details = {
-                id: petId,
-                name: 'Buddy',
-                breed: 'Golden Retriever',
-                age: 3,
-                birthday: '2019-06-15', // Use a string date or a Date object as needed
-                profileImage: 'https://example.com/path-to-pet-image.jpg',
-            };
-            */
-            try {
-                console.log("Hello")
-                const userId = await AsyncStorage.getItem('userId'); // or pass it as a prop
-                console.log("User ID:", userId)
-                const response = await fetch(`https://test2.playpals-app.com/api/pets/${userId}/${petId}`);
-            
-                if (!response.ok) {
-                  throw new Error('Failed to fetch pet');
-                }
-            
-                const data = await response.json();
-                setPetDetails(data); // Assuming backend returns { pets: [...] }
-                console.log(data)
-              } catch (error) {
-                console.error('Error fetching pets:', error);
-                Alert.alert('Error', 'Could not load your pets.');
-              }
-        };
+    useFocusEffect(
+        React.useCallback(() => {
+            const fetchPetDetails = async () => {
+                try {
+                    const userId = await AsyncStorage.getItem('userId');
+                    console.log("🔍 userId:", userId);
+                    console.log("🐾 petId:", petId);
 
-        fetchPetDetails();
-    }, [petId]);
+                    const response = await fetch(`https://test2.playpals-app.com/api/pets/${userId}/${petId}`);
+                    if (!response.ok) throw new Error('Failed to fetch pet');
+
+                    const data = await response.json();
+                    console.log('✅ Pet details:', data);
+                    setPetDetails(data);
+                } catch (error) {
+                    console.error('Error fetching pet:', error);
+                    Alert.alert('Error', 'Could not load your pet.');
+                }
+            };
+
+            fetchPetDetails();
+        }, [petId])
+    );
 
     if (!petDetails) {
         return (
@@ -54,15 +52,29 @@ const PetProfile = () => {
         );
     }
 
-    // If a profileImage URL is provided, use it; otherwise, fallback to a local placeholder
-    const imageSource = petDetails.profileImage
-        ? { uri: petDetails.profileImage }
-        : require('../assets/pet-placeholder.png');
+    const imageSource =
+        petDetails.profileImage && petDetails.profileImage.startsWith('http')
+            ? { uri: petDetails.profileImage }
+            : require('../assets/pet-placeholder.png');
 
-    // Safely format the birthday if available
     const formattedBirthday = petDetails.birthday
         ? new Date(petDetails.birthday).toLocaleDateString()
-        : 'Not Provided';
+        : 'Not provided';
+        const calculateAge = (birthday) => {
+            if (!birthday) return 'Not provided';
+        
+            const birthDate = new Date(birthday);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+        
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+        
+            return `${age} year${age !== 1 ? 's' : ''}`;
+        };
+        
 
     return (
         <ImageBackground
@@ -73,12 +85,13 @@ const PetProfile = () => {
                 <Image source={imageSource} style={styles.petImage} />
                 <Text style={styles.petName}>{petDetails.petName}</Text>
                 <Text style={styles.petDetails}>Breed: {petDetails.breed}</Text>
-                <Text style={styles.petDetails}>Age: {petDetails.age}</Text>
+                <Text style={styles.petDetails}>Age: {calculateAge(petDetails.birthday)}</Text>
                 <Text style={styles.petDetails}>Birthday: {formattedBirthday}</Text>
+
                 <View style={styles.buttonContainer}>
                     <Button
                         title="Edit Profile"
-                        onPress={() => navigation.navigate('EditPet', { petId: petDetails.id })}
+                        onPress={() => navigation.navigate('EditPet', { petId: petDetails.petId })}
                         color="#E76F51"
                     />
                 </View>
