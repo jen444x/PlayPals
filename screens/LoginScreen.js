@@ -31,9 +31,12 @@ export default function LoginScreen({ navigation }) {
       if (response.ok) {
         await AsyncStorage.setItem('token', data.token);
         await AsyncStorage.setItem('userId', data.userId.toString());
+        await AsyncStorage.setItem('username', data.username);
         const storedUserId = await AsyncStorage.getItem('userId');
+        const storedUsername = await AsyncStorage.getItem('username');
         console.log("Saved JWT Token:", data.token);
         console.log("Saved userId:", storedUserId);
+        console.log("Saved username:", storedUsername);
         navigation.navigate('PetHome');
       } else {
         Alert.alert("Error", "Invalid credentials");

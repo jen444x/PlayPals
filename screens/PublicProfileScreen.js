@@ -12,30 +12,17 @@ import {
   Dimensions, 
   ActivityIndicator 
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { ThemeContext } from '../ThemeContext';
 import * as Haptics from 'expo-haptics';
-
-// Dummy data representing a user profile 
-const dummyProfile = {
-  username: "JaneDoe",
-  avatar: require('../assets/avatar.png'), // Replace with your image asset
-  bio: "Lover of all animals. Follow for daily pet vibes!",
-  stats: {
-    followers: "1.2M",
-    following: "500",
-    likes: "3.4M",
-  },
-  posts: [
-    { id: '1', image: require('../assets/post1.jpg') },
-    { id: '2', image: require('../assets/post1.jpg') },
-    { id: '3', image: require('../assets/post1.jpg') },
-    { id: '4', image: require('../assets/post1.jpg') },
-    // Add more posts as needed
-  ],
-};
+import { BASE_URL } from '../config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProfileScreen() {
+  const [profile, setProfile] = useState(null);
+  const route = useRoute();
+  const { userId } = route.params;
+
   const navigation = useNavigation();
   const { isDarkMode } = useContext(ThemeContext); // Assume ThemeContext provides an isDarkMode boolean
 
@@ -52,30 +39,111 @@ export default function ProfileScreen() {
   const imageSize = useMemo(() => screenWidth / numColumns, [screenWidth, numColumns]);
 
   // Simulated current logged-in user. In a real app, replace with your auth logic.
-  const currentUser = "JaneDoe";
-  const isCurrentUserProfile = dummyProfile.username === currentUser;
+  //const currentUser = "JaneDoe";
 
   // State management for bio and API simulation
-  const [bio, setBio] = useState(dummyProfile.bio);
+  const [bio, setBio] = useState(profile?.bio);
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [loading, setLoading] = useState(false);  // Simulate loading state
   const [error, setError] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUsername, setCurrentUsername] = useState(null);
+
+  const isCurrentUserProfile = profile?.username === currentUsername;
 
   // Simulated API call to fetch profile data
   useEffect(() => {
+    const getCurrentUser = async () => {
+      try {
+        const id = await AsyncStorage.getItem('userId');
+        const username = await AsyncStorage.getItem('username');
+        setCurrentUserId(Number(id));
+        setCurrentUsername(username);
+      } catch (err) {
+        console.error("Failed to get current user", err);
+      }
+    };
+
+    getCurrentUser();
+  }, [])
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchProfile = async () => {
     setLoading(true);
-    // Replace with your actual API call
-    setTimeout(() => {
-      // Simulate success: set loading to false
+    try {
+      const res = await fetch(`${BASE_URL}api/users/${userId}`)
+      if (!res.ok) {
+        throw new Error("User not found");
+      }
+      const data = await res.json();
+      setProfile(data);
+    } catch (err) {
+      setError("Failed to load user profile.");
+      console.error(err);
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
+    }
+    }
+    fetchProfile();
+  }, [userId]);
 
   const handleSaveBio = () => {
     // In a real app, update the backend here.
     setIsEditingBio(false);
     // Trigger haptic feedback using Expo Haptics
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const handleStartChat = async () => {
+    if (!currentUserId || !profile?.id) return;
+
+    try {
+      const res = await fetch(`${BASE_URL}api/chats/spawnChat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user1Id: currentUserId,
+          user2Id: profile?.id
+        })
+      });
+  
+      const data = await res.json();
+  
+      if (data.chatId) {
+        navigation.navigate("Chat", {
+          chatUser: profile?.username,
+          currentUser: currentUsername,
+          chatId: data.chatId,
+        });
+      }
+    } catch (err) {
+      console.error("Chat creation failed:", err);
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!currentUserId || !profile?.id) return;
+
+    try {
+      const res = await fetch(`${BASE_URL}api/users/followUser`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          followerId: currentUserId,
+          followedId: profile.id,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        console.log("Follow successful!")
+      } else {
+        console.warn('Failed to follow:', data?.error)
+      }
+    } catch (err) {
+      console.error("Follow requst failed:", err)
+    }
   };
 
   // Inline memoized component for a post item
@@ -125,11 +193,15 @@ export default function ProfileScreen() {
       {/* Profile Header */}
       <View style={styles.header}>
         <Image 
-          source={dummyProfile.avatar} 
+          source={profile?.avatar} 
           style={styles.avatar} 
           accessibilityLabel="User avatar"
         />
-        <Text style={[styles.username, dynamicTextStyle]}>{dummyProfile.username}</Text>
+        {profile && (
+          <Text style={[styles.username, dynamicTextStyle]}>
+            {profile?.username}
+          </Text>
+        )}
         {isEditingBio ? (
           <>
             <TextInput
@@ -171,15 +243,15 @@ export default function ProfileScreen() {
         )}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, dynamicTextStyle]}>{dummyProfile.stats.followers}</Text>
+            <Text style={[styles.statValue, dynamicTextStyle]}>{profile?.stats?.followers}</Text>
             <Text style={[styles.statLabel, dynamicTextStyle]}>Followers</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, dynamicTextStyle]}>{dummyProfile.stats.following}</Text>
+            <Text style={[styles.statValue, dynamicTextStyle]}>{profile?.stats?.following}</Text>
             <Text style={[styles.statLabel, dynamicTextStyle]}>Following</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, dynamicTextStyle]}>{dummyProfile.stats.likes}</Text>
+            <Text style={[styles.statValue, dynamicTextStyle]}>{profile?.stats?.likes}</Text>
             <Text style={[styles.statLabel, dynamicTextStyle]}>Likes</Text>
           </View>
         </View>
@@ -188,6 +260,7 @@ export default function ProfileScreen() {
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity 
               style={[styles.followButton, { backgroundColor: '#fe2c55' }]}
+              onPress={handleFollow}
               accessibilityLabel="Follow Button"
               accessibilityHint="Tap to follow this user"
             >
@@ -195,7 +268,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.messageButton, { backgroundColor: '#2196F3' }]}
-              onPress={() => navigation.navigate('Chat', { user: dummyProfile.username })}
+              onPress={handleStartChat}
               accessibilityLabel="Send Message Button"
               accessibilityHint="Tap to send a text message"
             >
@@ -224,7 +297,7 @@ export default function ProfileScreen() {
       
       {/* Posts Grid */}
       <FlatList
-        data={dummyProfile.posts}
+        data={profile?.posts}
         keyExtractor={(item) => item.id}
         renderItem={renderPost}
         numColumns={numColumns}

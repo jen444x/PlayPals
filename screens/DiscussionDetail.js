@@ -13,6 +13,8 @@ import {
   Platform
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from '../config';
 
 export default function DiscussionDetail() {
   const route = useRoute();
@@ -23,45 +25,64 @@ export default function DiscussionDetail() {
   const [replyContent, setReplyContent] = useState('');
   const [editingReplyId, setEditingReplyId] = useState(null);
   const [editingReplyContent, setEditingReplyContent] = useState('');
+  const [currentUsername, setCurrentUsername] = useState('');
 
   // Simulated API call to fetch discussion details including replies
   useEffect(() => {
-    const fetchDiscussion = async () => {
-      // Replace with your actual API call
-      const discussionData = {
-        id: discussionId,
-        title: 'Discussion Title',
-        content: 'This is the content of the discussion post. Share your thoughts!',
-        author: 'User1',
-        replies: [
-          { id: 'r1', author: 'User2', content: 'Great post!' },
-          { id: 'r2', author: 'User3', content: 'I agree with your thoughts.' },
-        ],
-      };
-      setDiscussion(discussionData);
+    const loadCurrentUser = async () => {
+      const username = await AsyncStorage.getItem('username');
+      setCurrentUsername(username);
     };
 
+    const fetchDiscussion = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}api/discussions/thread/${discussionId}`);
+        const data = await res.json();
+        setDiscussion(data);
+      } catch (err) {
+        console.error("Error fetching discussion:", err);
+        Alert.alert("Error", "Failed to load discussion.");
+      }
+    };
+
+    loadCurrentUser();
     fetchDiscussion();
   }, [discussionId]);
 
-  const handlePostReply = () => {
+  const handlePostReply = async () => {
     if (!replyContent.trim()) {
       Alert.alert('Error', 'Please enter a reply.');
       return;
     }
-    // Create a new reply object
-    const newReply = {
-      id: Date.now().toString(),
-      author: 'CurrentUser', // Replace with the actual current user's name
-      content: replyContent,
-    };
-    // Simulate adding the reply (update state)
-    setDiscussion({
-      ...discussion,
-      replies: [newReply, ...discussion.replies],
-    });
-    setReplyContent('');
-    Alert.alert('Reply Posted', 'Your reply has been added.');
+
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) throw new Error("User not authenticated");
+
+      const res = await fetch(`${BASE_URL}api/discussions/thread/${discussion.id}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: parseInt(userId),
+          content: replyContent.trim(),
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to post reply");
+
+      // Refresh discussion to include new reply
+      const updated = await res.json();
+      setReplyContent('');
+      Alert.alert('Reply Posted', 'Your reply has been added.');
+      // Better: re-fetch replies only
+      const threadRes = await fetch(`${BASE_URL}api/discussions/thread/${discussion.id}`);
+      const updatedThread = await threadRes.json();
+      setDiscussion(updatedThread);
+    } catch (err) {
+      console.error("Reply post failed:", err);
+      Alert.alert("Error", err.message);
+    }
+
   };
 
   const handleEditReply = (reply) => {
@@ -69,16 +90,34 @@ export default function DiscussionDetail() {
     setEditingReplyContent(reply.content);
   };
 
-  const handleSaveReply = (replyId) => {
-    const updatedReplies = discussion.replies.map((reply) => {
-      if (reply.id === replyId) {
-        return { ...reply, content: editingReplyContent };
-      }
-      return reply;
-    });
-    setDiscussion({ ...discussion, replies: updatedReplies });
-    setEditingReplyId(null);
-    setEditingReplyContent('');
+  const handleSaveReply = async (replyId) => {
+    try {
+        const userId = await AsyncStorage.getItem('userId');
+      if (!userId) throw new Error("User not authenticated");
+      
+      const res = await fetch(`${BASE_URL}api/discussions/thread/reply/${replyId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: editingReplyContent,
+          userId: parseInt(userId)
+        }),
+      });
+    
+      if (!res.ok) throw new Error("Failed to save reply");
+    
+      const data = await res.json();
+    
+      const updatedReplies = discussion.replies.map((reply) =>
+        reply.id === replyId ? { ...reply, content: data.updatedReply.content } : reply
+      );
+      setDiscussion({ ...discussion, replies: updatedReplies });
+      setEditingReplyId(null);
+      setEditingReplyContent('');
+    } catch (err) {
+      console.error("Failed to save reply:", err);
+      Alert.alert("Error", err.message);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -106,7 +145,7 @@ export default function DiscussionDetail() {
 
   const renderReplyItem = ({ item }) => {
     // Check if this reply is in edit mode (only for the current user's reply)
-    if (item.author === "CurrentUser" && editingReplyId === item.id) {
+    if (item.author === currentUsername && editingReplyId === item.id) {
       return (
         <View style={styles.replyContainer}>
           <Text style={styles.replyAuthor}>{item.author}:</Text>
@@ -131,7 +170,7 @@ export default function DiscussionDetail() {
         <View style={styles.replyContainer}>
           <Text style={styles.replyAuthor}>{item.author}:</Text>
           <Text style={styles.replyContent}>{item.content}</Text>
-          {item.author === "CurrentUser" && (
+          {item.author === currentUsername && (
             <TouchableOpacity style={styles.editButton} onPress={() => handleEditReply(item)}>
               <Text style={styles.editButtonText}>Edit</Text>
             </TouchableOpacity>

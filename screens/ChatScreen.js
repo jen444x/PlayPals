@@ -22,6 +22,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { v4 as uuidv4 } from 'uuid';
 import Video from 'react-native-video';
 import { BASE_URL } from '../config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const host = 'wss://test2.playpals-app.com'
 
@@ -31,11 +32,10 @@ const socket = io(host, {
   autoConnect: false, 
 });
 
-
-
 // Component to render each message along with its timestamp and media (if available)
-const MessageItem = ({ item }) => {
-  const isCurrentUser = item.sender === 'CurrentUser';
+const MessageItem = ({ item, currentUser }) => {
+  //const { currentUser } = route.params;
+  const isCurrentUser = item.sender === currentUser;
   const dateTimeString = new Date(item.timestamp).toLocaleString();
   return (
     <View style={[
@@ -95,9 +95,12 @@ const MessageInput = ({ inputMessage, setInputMessage, handleSendMessage, handle
 export default function ChatScreen() {
   const route = useRoute();
   const navigation = useNavigation();
-  const { chatUser, roomName = "default-room", currentUser = "CurrentUser" } = route.params;
+  const { chatUser, chatId } = route.params;
+  const roomId = chatId;
   //const { chatUser } = route.params || { chatUser: 'User2' };
 
+  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [typingIndicator, setTypingIndicator] = useState('');
@@ -111,41 +114,84 @@ export default function ChatScreen() {
       { id: uuidv4(), sender: 'CurrentUser', content: 'I’m good, thanks! How about you?', timestamp: new Date().toISOString() },
     ]; */
 
-    socket.connect();
-    socket.emit("enterRoom", { name: currentUser, room: roomName });
+    const fetchUserInfo = async () => {
+      try {
+        const username = await AsyncStorage.getItem('username');
+        const id = await AsyncStorage.getItem('userId');
+        if (username && id) {
+          setCurrentUser(username);
+          setCurrentUserId(id);
 
-    socket.on("message", (data) => {
-      setMessages((prev) => [...prev, {
-        id: uuidv4(),
-        sender: data.name,
-        content: data.text,
-        timestamp: new Date().toISOString()
-      }]);
-    });
+          socket.connect();
 
-    socket.on("chatHistory", (history) => {
-      const formatted = history.map(msg => ({
-        id: uuidv4(),
-        sender: msg.name,
-        content: msg.text,
-        timestamp: new Date().toISOString(),
-      }));
-      setMessages((prev) => [...prev, ...formatted]);
-    });
+          socket.emit("enterRoom", { 
+            name: username, 
+            room: roomId, 
+            chatId: chatId, 
+            userId: id 
+          });
 
-    socket.on("activity", (name) => {
-      if (name !== currentUser) {
-        setTypingIndicator(`${name} is typing...`);
-        setTimeout(() => setTypingIndicator(''), 3000);
+          socket.on("message", (data) => {
+            console.log("📩 Received message:", data);
+            console.log("🧑‍💻 currentUser:", currentUser);
+      
+            setMessages((prev) => [...prev, {
+              id: uuidv4(),
+              sender: data.name,
+              content: data.text,
+              timestamp: new Date().toISOString()
+            }]);
+          });
+
+          socket.on("chatHistory", (history) => {
+            const formatted = history.map(msg => ({
+              id: uuidv4(),
+              sender: msg.name,
+              content: msg.text,
+              timestamp: msg.time,
+            }));
+            setMessages(formatted);
+          });
+
+          socket.on("activity", (name) => {
+            if (name !== username) {
+              setTypingIndicator(`${name} is typing...`);
+              setTimeout(() => setTypingIndicator(''), 3000);
+            }
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load currentUser from AsyncStorage', err);
       }
-    });
+    };
+
+    const fetchMessages = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}api/chat/${chatId}`)
+        const data = await res.json();
+
+        const formatted = data.map(msg => ({
+          id: msg.messageId.toString(),
+          sender: msg.senderName,
+          content: msg.message,
+          timestamp: msg.timeSent
+        }));
+
+        setMessages(formatted);
+      } catch (err) {
+        console.error("Error fetching messages: ", err)
+      }
+    };
+
+    fetchUserInfo();
+    fetchMessages();
 
     return () => {
       socket.disconnect();
     };
 
     //setMessages(initialMessages);
-  }, [roomName]);
+  }, [roomId]);
 
   const handleSendMessage = () => {
     if (!inputMessage.trim()) {
@@ -154,17 +200,18 @@ export default function ChatScreen() {
     }
     const newMessage = {
       id: uuidv4(),
-      sender: 'CurrentUser',
+      sender: currentUser,
       content: inputMessage,
       timestamp: new Date().toISOString(),
     };
 
     socket.emit("message", {
       name: currentUser,
+      userId: currentUserId,
+      chatId: chatId,
       text: inputMessage,
     });
 
-    setMessages(prev => [...prev, newMessage]);
     setInputMessage('');
     // Scroll to the bottom after sending a message
     setTimeout(() => {
@@ -204,7 +251,7 @@ export default function ChatScreen() {
       }
       const newMessage = {
         id: uuidv4(),
-        sender: 'CurrentUser',
+        sender: currentUser,
         content: '', // optional text content; can be added later
         timestamp: new Date().toISOString(),
         media: { type: mediaType, uri: asset.uri },
@@ -240,7 +287,9 @@ export default function ChatScreen() {
                 ref={flatListRef}
                 data={messages}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => <MessageItem item={item} />}
+                renderItem={({ item }) => (
+                  <MessageItem item={item} currentUser={currentUser} />
+                )}
                 contentContainerStyle={styles.messagesList}
                 initialNumToRender={10}
                 windowSize={5}
