@@ -42,17 +42,21 @@ var postsRouter = require("./routes/api/posts");
 var apiForumRouter = require("./routes/api/forum");
 var pagesRouter = require("./routes/pages/pages");
 var forumRouter = require("./routes/pages/forum");
+var discussionRouter = require("./routes/api/discussions");
 var petsRouter = require("./routes/api/pets");
 var authRouter = require("./routes/api/auth");
+var chatRouter = require("./routes/api/chats");
 
 app.use("/", indexRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/posts", postsRouter);
 app.use("/api/forum", apiForumRouter);
+app.use("/api/discussions", discussionRouter);
 app.use("/", pagesRouter);
 app.use("/forum", forumRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/pets", petsRouter);
+app.use("/api/chats", chatRouter);
 
 app.use((req, res, next) => {
   console.log(`Request received: ${req.path}`);

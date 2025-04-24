@@ -17,6 +17,44 @@ router.get("/", async (req, res) => {
   }
 });
 
+
+router.get("/search", async (req, res) => {
+  const query = req.query.q;
+
+  if (!query) {
+    return res.status(400).json({ error: "Missing search query" });
+  }
+
+  try {
+    const result = await pool.query(`
+      SELECT id, username FROM users WHERE username ILIKE $1`,
+      [`%${query}%`]);
+    console.log(result.rows);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching users:", err.message);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.post('/followUser', async (req, res) => {
+  const {followerId, followedId } = req.body;
+  
+  try {
+    await pool.query(
+      `INSERT INTO 
+        follows ("followerId", "followedId", "createdAt")
+        VALUES ($1, $2, NOW())
+        ON CONFLICT DO NOTHING
+      `, [followerId, followedId]
+    );
+    res.status(200).json({ message: 'Follow successful'});
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error following user'})
+  }
+})
+
 // get one user
 router.get("/:userId", checkUserExists, async (req, res) => {
   //req.params contains the route parameter

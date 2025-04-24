@@ -91,7 +91,7 @@ router.post("/loginUser", async (req, res) => {
 
         return res
           .status(200)
-          .json({ message: "logged in", token, userId: user.id });
+          .json({ message: "logged in", token, userId: user.id, username: user.username });
       } else {
         // if password didn't match
         return res.status(401).json({ message: "Incorrect credentials" });
