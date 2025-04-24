@@ -19,7 +19,6 @@ import { Video } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import mime from 'mime';
-import { BASE_URL } from '../config.js';
 
 export default function PersonalFeedScreen() {
   const [media, setMedia] = useState(null);
@@ -105,7 +104,7 @@ export default function PersonalFeedScreen() {
       formData.append('caption', caption);
       formData.append('mediaType', media.type);
 
-      const response = await fetch(`${BASE_URL}api/posts/submitFeedPost/${userId}`, {
+      const response = await fetch(`https://test2.playpals-app.com/api/posts/submitFeedPost/${userId}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

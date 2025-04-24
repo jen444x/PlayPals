@@ -4,7 +4,6 @@ import {
   TouchableWithoutFeedback, Keyboard, Image, Platform, ActivityIndicator, Animated
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BASE_URL } from '../config.js';
 import { Audio } from 'expo-av';
 import ConfettiCannon from 'react-native-confetti-cannon';
 
@@ -41,7 +40,7 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
 
     try {
-      const response = await fetch(`${BASE_URL}api/auth/loginUser`, {
+      const response = await fetch('https://test2.playpals-app.com/api/auth/loginUser', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,15 +53,6 @@ export default function LoginScreen({ navigation }) {
       if (response.ok) {
         await AsyncStorage.setItem('token', data.token);
         await AsyncStorage.setItem('userId', data.userId.toString());
-<<<<<<< screens/LoginScreen.js
-        await AsyncStorage.setItem('username', data.username);
-        const storedUserId = await AsyncStorage.getItem('userId');
-        const storedUsername = await AsyncStorage.getItem('username');
-        console.log("Saved JWT Token:", data.token);
-        console.log("Saved userId:", storedUserId);
-        console.log("Saved username:", storedUsername);
-        navigation.navigate('PetHome');
-=======
 
         const { sound } = await Audio.Sound.createAsync(require('../assets/bark.mp3'));
         await sound.playAsync();
@@ -80,7 +70,6 @@ setTimeout(() => {
 }, 1800); // wait for confetti to pop before fade
 
 
->>>>>>> screens/LoginScreen.js
       } else {
         Alert.alert("Login Failed", data?.message || "Invalid credentials");
       }

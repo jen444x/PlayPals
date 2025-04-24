@@ -26,25 +26,13 @@ const HomeScreen = () => {
                 { id: '2', name: 'Max', breed: 'Bulldog' },
             ];
             */
-            try {
-                console.log("Hello")
-                const userId = await AsyncStorage.getItem('userId'); // or pass it as a prop
-                console.log("Home UserID", userId)
-                const response = await fetch(`${BASE_URL}api/pets/${userId}`);
-            
-                if (!response.ok) {
-                  throw new Error('Failed to fetch pets');
-                }
-            
-                const data = await response.json();
-                setPets(data); // Assuming backend returns { pets: [...] }
-                console.log(data)
-              } catch (error) {
-                console.error('Error fetching pets:', error);
-                Alert.alert('Error', 'Could not load your pets.');
-              }
-            //setPets(userPets);
-        };
+      try {
+        console.log("Hello");
+        const userId = await AsyncStorage.getItem("userId"); // or pass it as a prop
+        console.log("Home UserID", userId);
+        const response = await fetch(
+          `https://test2.playpals-app.com/api/pets/${userId}`
+        );
 
         if (!response.ok) {
           throw new Error("Failed to fetch pets");
