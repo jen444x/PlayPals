@@ -11,7 +11,7 @@ import {
 import { Video } from 'expo-av';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BASE_URL } from '../config.js'; // Adjust path as needed
+import { BASE_URL } from '../config.js';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
@@ -45,7 +45,7 @@ export default function FeedScreen() {
   const fetchFeed = async () => {
     try {
       const userId = await AsyncStorage.getItem('userId');
-      const response = await fetch(`https://test2.playpals-app.com/api/posts/getPosts/${userId}`);
+      const response = await fetch(`${BASE_URL}api/posts/getPosts/${userId}`);
       const data = await response.json();
       setFeedData(data);
     } catch (error) {

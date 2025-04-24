@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from '../config.js';
 
 const PetProfile = () => {
     const route = useRoute();
@@ -19,13 +20,37 @@ const PetProfile = () => {
 
     const [petDetails, setPetDetails] = useState(null);
 
-    useFocusEffect(
-        React.useCallback(() => {
-            const fetchPetDetails = async () => {
-                try {
-                    const userId = await AsyncStorage.getItem('userId');
-                    console.log("🔍 userId:", userId);
-                    console.log("🐾 petId:", petId);
+    useEffect(() => {
+        const fetchPetDetails = async () => {
+            // Simulated API call: replace this with your actual API call
+            /*
+            const details = {
+                id: petId,
+                name: 'Buddy',
+                breed: 'Golden Retriever',
+                age: 3,
+                birthday: '2019-06-15', // Use a string date or a Date object as needed
+                profileImage: 'https://example.com/path-to-pet-image.jpg',
+            };
+            */
+            try {
+                console.log("Hello")
+                const userId = await AsyncStorage.getItem('userId'); // or pass it as a prop
+                console.log("User ID:", userId)
+                const response = await fetch(`${BASE_URL}api/pets/${userId}/${petId}`);
+            
+                if (!response.ok) {
+                  throw new Error('Failed to fetch pet');
+                }
+            
+                const data = await response.json();
+                setPetDetails(data); // Assuming backend returns { pets: [...] }
+                console.log(data)
+              } catch (error) {
+                console.error('Error fetching pets:', error);
+                Alert.alert('Error', 'Could not load your pets.');
+              }
+        };
 
                     const response = await fetch(`https://test2.playpals-app.com/api/pets/${userId}/${petId}`);
                     if (!response.ok) throw new Error('Failed to fetch pet');
