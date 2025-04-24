@@ -23,13 +23,18 @@ const AddPet = () => {
         const ageDate = new Date(ageDifMs);
         return Math.abs(ageDate.getUTCFullYear() - 1970);
     };
-
+    const normalizeDate = (date) => {
+        const normalized = new Date(date);
+        normalized.setHours(0, 0, 0, 0);
+        return normalized;
+      };
+      
     // Handle date change from the date picker
     //CHANGED FOR WEB, REVERT IF BROKEN ON IOS
     const handleDateChange = (event, selectedDate) => {
         setShowDatePicker(false);
         if (selectedDate) {
-            setPetBirthday(selectedDate);
+            setPetBirthday(normalizeDate(selectedDate));
         }
     };
 
@@ -136,9 +141,7 @@ const AddPet = () => {
                     onChangeText={setPetBreed}
                     placeholderTextColor="#8B7E66"
                 />
-                <View style={styles.dateButton}>
-                    <Button title="Select Birthday" onPress={() => setShowDatePicker(true)} color="#FF6F61" />
-                </View>
+               
                 {petBirthday && (
                     <Text style={styles.birthdayText}>
                         Selected: {petBirthday.toLocaleDateString()} (Age: {calculateAge(petBirthday)})
@@ -152,7 +155,7 @@ const AddPet = () => {
     value={petBirthday ? petBirthday.toISOString().split('T')[0] : ''}
     onChangeText={(text) => {
       const selectedDate = new Date(text);
-      if (!isNaN(selectedDate)) setPetBirthday(selectedDate);
+      if (!isNaN(selectedDate)) setPetBirthday(normalizeDate(selectedDate));
     }}
     placeholderTextColor="#8B7E66"
   />
@@ -165,6 +168,9 @@ const AddPet = () => {
         color="#FF6F61"
       />
     </View>
+    <Text style={styles.birthdayText}>
+                        {petBirthday ? `Selected Birthday: ${petBirthday.toLocaleDateString()}` : 'No birthday selected'}
+                    </Text>
     {showDatePicker && (
       <DateTimePicker
         value={petBirthday || new Date()}

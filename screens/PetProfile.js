@@ -57,9 +57,16 @@ const PetProfile = () => {
             ? { uri: petDetails.profileImage }
             : require('../assets/pet-placeholder.png');
 
-    const formattedBirthday = petDetails.birthday
-        ? new Date(petDetails.birthday).toLocaleDateString()
-        : 'Not provided';
+            const formatLocalDate = (dateString) => {
+                const date = new Date(dateString);
+                const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                return localDate.toLocaleDateString();
+            };
+            
+            const formattedBirthday = petDetails.birthday
+                ? formatLocalDate(petDetails.birthday)
+                : 'Not provided';
+            
         const calculateAge = (birthday) => {
             if (!birthday) return 'Not provided';
         

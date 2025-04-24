@@ -6,20 +6,19 @@ import CreatePostScreen from './CreatePostScreen'
 import ForumsScreen from './ForumsScreen';
 import AppSettings from './AppSettings';
 import FeedScreen from './FeedScreen'; 
+import HomeScreen from './HomeScreen';
 
 //Personal feed component would go here
 function FeedScreenRender() {
   return (
-    <FeedScreen/>
+     <FeedScreen /> 
   );
 }
 
 //Play date component
 function PlayDateScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Welcome to the play date page!</Text>
-    </View>
+    <HomeScreen/>
   );
 }
 
@@ -102,7 +101,7 @@ export default function PersonalFeedNav({ navigation }) {
       
             if (route.name === "Home") {
               iconSource = require('../assets/home.png');
-            } else if (route.name === "Play Date") {
+            } else if (route.name === "Pets") {
               iconSource = require('../assets/paws.png');
             } else if (route.name === "Forums") {
               iconSource = require('../assets/forums.png');
@@ -127,8 +126,8 @@ export default function PersonalFeedNav({ navigation }) {
           },
         })}
       >
-        <Tab.Screen name="Home" component={FeedScreen} options={{headerShown: false}} />
-        <Tab.Screen name="Play Date" component={PlayDateScreen} options={{headerShown: false}} />
+        <Tab.Screen name="Home" component={FeedScreenRender} options={{headerShown: false}} />
+        <Tab.Screen name="Pets" component={PlayDateScreen} options={{headerShown: false}} />
         <Tab.Screen name="Forums" component={ForumsScreen} options={{headerShown: false}} /> 
         <Tab.Screen name="Create Post" component={CreatePostScreenRender} options={{headerShown: false}} />
         <Tab.Screen name="Calendar" component={CalendarScreenRender} options={{headerShown: false}} />

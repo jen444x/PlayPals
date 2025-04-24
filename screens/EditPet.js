@@ -33,21 +33,13 @@ const EditPet = () => {
         const fetchPetDetails = async () => {
             try {
                 const userId = await AsyncStorage.getItem('userId');
-                console.log('🔍 userId:', userId);
-                console.log('🐾 petId:', petId);
-    
                 const url = `https://test2.playpals-app.com/api/pets/${userId}/${petId}`;
-                console.log('🌐 Fetching from:', url);
-    
                 const response = await fetch(url);
                 const text = await response.text();
-                console.log('📬 Raw Response:', response.status, text);
-    
+
                 if (!response.ok) throw new Error('Failed to fetch pet');
-    
+
                 const data = JSON.parse(text);
-                console.log('✅ Pet data:', data);
-    
                 setPetName(data.petName || '');
                 setPetBreed(data.breed || '');
                 setPetBirthday(data.birthday ? new Date(data.birthday) : null);
@@ -57,10 +49,9 @@ const EditPet = () => {
                 Alert.alert('Error', 'Failed to load pet details.');
             }
         };
-    
+
         fetchPetDetails();
     }, [petId]);
-    
 
     const handleDateChange = (event, selectedDate) => {
         setShowDatePicker(Platform.OS === 'ios');
@@ -87,14 +78,19 @@ const EditPet = () => {
             setPetImage(result.assets[0].uri);
         }
     };
+
     const uploadImageToServer = async (localUri) => {
+        const filename = localUri.split('/').pop();
+        const match = /\.(\w+)$/.exec(filename ?? '');
+        const type = match ? `image/${match[1]}` : 'image';
+
         const formData = new FormData();
         formData.append('image', {
             uri: localUri,
-            name: 'pet.jpg',
-            type: 'image/jpeg',
+            name: filename,
+            type,
         });
-    
+
         try {
             const response = await fetch('https://test2.playpals-app.com/api/uploads', {
                 method: 'POST',
@@ -103,54 +99,50 @@ const EditPet = () => {
                 },
                 body: formData,
             });
-    
+
             if (!response.ok) {
                 const errorText = await response.text();
                 console.log('Upload error:', errorText);
                 throw new Error('Image upload failed');
             }
-    
+
             const data = await response.json();
-            console.log('✅ Uploaded image URL:', data.imageUrl);
-            return data.imageUrl;
+            const fullUrl = `https://test2.playpals-app.com${data.imageUrl}`;
+            console.log('✅ Uploaded image URL:', fullUrl);
+            return fullUrl;
         } catch (err) {
             console.error('❌ Image upload failed:', err);
             throw err;
         }
     };
-    
+
     const handleUpdatePet = async () => {
         if (!petName.trim() || !petBreed.trim() || !petBirthday) {
             setError('Please fill in all fields correctly.');
             return;
         }
-    
+
         setError('');
         setIsLoading(true);
-    
+
         try {
             const userId = await AsyncStorage.getItem('userId');
-    
+
             let imageUrl = null;
-    
-            // If the image was selected from phone (local URI), upload it first
             if (petImage && petImage.startsWith('file://')) {
                 imageUrl = await uploadImageToServer(petImage);
             } else {
-                imageUrl = petImage; // Use existing image URL if already set
+                imageUrl = petImage;
             }
-    
+
             const payload = {
                 petName,
                 breed: petBreed,
                 birthday: petBirthday.toISOString(),
                 profileImage: imageUrl,
             };
-    
+
             const url = `https://test2.playpals-app.com/api/pets/${userId}/${petId}`;
-            console.log('🔄 PUT to:', url);
-            console.log('📝 Payload:', payload);
-    
             const response = await fetch(url, {
                 method: 'PUT',
                 headers: {
@@ -158,12 +150,10 @@ const EditPet = () => {
                 },
                 body: JSON.stringify(payload),
             });
-    
+
             const responseText = await response.text();
-            console.log('📬 Server Response:', response.status, responseText);
-    
-            if (!response.ok) throw new Error('Failed to update pet.');
-    
+            if (!response.ok) throw new Error(responseText || 'Failed to update pet.');
+
             Alert.alert('Success', 'Pet details updated successfully!', [
                 { text: 'OK', onPress: () => navigation.goBack() },
             ]);
@@ -174,8 +164,6 @@ const EditPet = () => {
             setIsLoading(false);
         }
     };
-    
-    
 
     return (
         <ImageBackground source={require('../assets/petBackground.jpg')} style={styles.background}>
@@ -256,9 +244,6 @@ const styles = StyleSheet.create({
         fontSize: 30,
         fontWeight: 'bold',
         color: '#4A4A4A',
-        textShadowColor: '#fff',
-        textShadowOffset: { width: 2, height: 2 },
-        textShadowRadius: 5,
         marginBottom: 20,
     },
     input: {
@@ -297,6 +282,7 @@ const styles = StyleSheet.create({
         width: '100%',
         marginTop: 10,
     },
+    
     errorText: {
         color: '#D9534F',
         marginBottom: 10,
