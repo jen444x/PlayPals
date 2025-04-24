@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,14 @@ import {
   ToastAndroid,
   Platform,
   ScrollView,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
   ActivityIndicator,
   LayoutAnimation,
   UIManager,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -40,21 +44,22 @@ const UserProfile = () => {
 
   // Original profile holds the saved state.
   const [originalProfile, setOriginalProfile] = useState({
-    name: 'Fluffy Friend',
-    username: 'petlover123',
-    email: 'fluffy@example.com',
-    password: 'password', // NOTE: Do not store real passwords like this in production!
-    location: 'Unknown Location',
+    name: '',
+    username: '',
+    email: '',
+    password: '',
+    location: '',
     profileImage: null,
-    petProfiles: [
-      { id: 1, name: 'Buddy', image: null },
-      { id: 2, name: 'Mittens', image: null },
-    ],
+    petProfiles: [],
   });
 
   // Local state for profile image and pet profiles (managed outside of Formik)
   const [profileImage, setProfileImage] = useState(originalProfile.profileImage);
-  const [petProfiles, setPetProfiles] = useState(originalProfile.petProfiles);
+  const [petProfiles, setPetProfiles] = useState([]);
+  const [petNameEdits, setPetNameEdits] = useState({});
+
+
+  
 
   // Editing and loading state
   const [isEditing, setIsEditing] = useState(false);
@@ -76,6 +81,32 @@ const UserProfile = () => {
       Alert.alert('', message);
     }
   };
+ // Fetch user profile from backend
+ useEffect(() => {
+  const fetchUserProfile = async () => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+
+      // Fetch user info
+      const res = await fetch(`https://test2.playpals-app.com/api/users/${userId}`);
+      const userData = await res.json();
+
+      // Fetch pets
+      const petsRes = await fetch(`https://test2.playpals-app.com/api/pets/${userId}`);
+      const petData = await petsRes.json();
+
+      // Save both in state
+      setOriginalProfile({ ...userData, petProfiles: petData });
+      setProfileImage(userData.profileImage);
+      setPetProfiles(petData);
+    } catch (err) {
+      console.error('Error fetching profile or pets:', err);
+    }
+  };
+
+  fetchUserProfile();
+}, []);
+
 
   // Pick profile image with loading indicator and error handling
   const pickImage = async () => {
@@ -105,20 +136,101 @@ const UserProfile = () => {
   };
 
   // Pet Profiles Management
-  const addPetProfile = () => {
-    const newPet = { id: Date.now(), name: 'New Pet', image: null };
-    setPetProfiles([...petProfiles, newPet]);
-    showToast('Pet profile added');
+  const addPetProfile = async () => {
+    try {
+      const userId = await AsyncStorage.getItem("userId");
+      if (!userId) {
+        showToast("User ID not found.");
+        return;
+      }
+  
+      const newPet = {
+        name: "New Pet",
+        breed: "Unknown",
+      };
+  
+      const response = await fetch(`https://test2.playpals-app.com/api/pets/${userId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newPet),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to add pet");
+      }
+  
+      const savedPet = await response.json();
+      setPetProfiles([...petProfiles, savedPet]);
+      showToast("Pet profile added successfully!");
+    } catch (error) {
+      console.error("Add pet failed:", error);
+      showToast("Could not save pet profile.");
+    }
   };
+  
 
-  const removePetProfile = (petId) => {
-    setPetProfiles(petProfiles.filter(pet => pet.id !== petId));
-    showToast('Pet profile removed');
+  const removePetProfile = async (petId) => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      const res = await fetch(`https://test2.playpals-app.com/api/pets/${userId}/${petId}`, {
+        method: 'DELETE',
+      });
+  
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Failed to delete pet: ${errorText}`);
+      }
+  
+      setPetProfiles((prevPets) => prevPets.filter((pet) => pet.petId !== petId));
+      showToast('Pet profile removed');
+    } catch (error) {
+      console.error('❌ Delete pet failed:', error);
+      showToast('Failed to delete pet');
+    }
   };
-
-  const updatePetName = (petId, newName) => {
-    setPetProfiles(petProfiles.map(pet => pet.id === petId ? { ...pet, name: newName } : pet));
+  
+  const updatePetName = async (petId, newName) => {
+    if (!newName.trim()) {
+      showToast('Please enter a valid pet name.');
+      return;
+    }
+  
+    setIsLoading(true);
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+  
+      const payload = {
+        petName: newName,
+      };
+  
+      const url = `https://test2.playpals-app.com/api/pets/${userId}/${petId}`;
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+  
+      const responseText = await response.text();
+      if (!response.ok) throw new Error(responseText || 'Failed to update pet.');
+  
+      // Update local state
+      setPetProfiles((prevPets) =>
+        prevPets.map((pet) =>
+          pet.petId === petId ? { ...pet, petName: newName } : pet
+        )
+      );
+  
+      showToast('Pet name updated!');
+    } catch (err) {
+      console.error('Error updating pet:', err);
+      showToast('An error occurred while updating pet name.');
+    } finally {
+      setIsLoading(false);
+    }
   };
+  
 
   // Function to fetch current location and set city, state using reverse geocoding
   const fetchCurrentLocation = async (setFieldValue) => {
@@ -150,21 +262,46 @@ const UserProfile = () => {
   };
 
   // Handle saving profile (simulate API call with timeout)
-  const handleSaveProfile = (values, resetForm) => {
+  const handleSaveProfile = async (values, resetForm) => {
     setIsLoading(true);
-    setTimeout(() => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setOriginalProfile({
-        ...values,
-        profileImage,
-        petProfiles,
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+  
+      // ✅ Build payload from allowed DB columns
+      const [city = '', state = ''] = values.location?.split(',').map(s => s.trim()) || [];
+  
+      const payload = {
+        email: values.email,
+        username: values.username,
+        password: values.password,
+        city,
+        state,
+      };
+  
+      const res = await fetch(`https://test2.playpals-app.com/api/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
+  
+      const resText = await res.text();
+      console.log('🔍 Server response:', resText);
+  
+      if (!res.ok) throw new Error(resText || 'Update failed');
+  
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setOriginalProfile({ ...values, profileImage, petProfiles });
       resetForm({ values });
       setIsEditing(false);
+      showToast('Profile updated');
+    } catch (e) {
+      console.error('Save error:', e);
+      showToast('Save failed');
+    } finally {
       setIsLoading(false);
-      showToast('Profile Updated Successfully!');
-    }, 1500);
+    }
   };
+  
 
   // Handle canceling editing and reverting changes
   const handleCancelEditing = (resetForm) => {
@@ -185,22 +322,31 @@ const UserProfile = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={[styles.container, dynamicContainerStyle]}>
-      <Text style={[styles.title, dynamicTextStyle]}>My Pet Profile</Text>
-      <Formik
-        enableReinitialize
-        initialValues={{
-          name: originalProfile.name,
-          username: originalProfile.username,
-          email: originalProfile.email,
-          password: originalProfile.password,
-          location: originalProfile.location,
-        }}
-        validationSchema={ProfileSchema}
-        onSubmit={(values, { resetForm }) => handleSaveProfile(values, resetForm)}
-      >
-        {({ handleChange, handleBlur, handleSubmit, values, errors, touched, setFieldValue, resetForm }) => (
-          <>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0} // adjust offset for iOS if needed
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView
+          contentContainerStyle={[styles.container, dynamicContainerStyle]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={[styles.title, dynamicTextStyle]}>My Pet Profile</Text>
+          <Formik
+            enableReinitialize
+            initialValues={{
+              name: originalProfile.name,
+              username: originalProfile.username,
+              email: originalProfile.email,
+              password: originalProfile.password,
+              location: originalProfile.location,
+            }}
+            validationSchema={ProfileSchema}
+            onSubmit={(values, { resetForm }) => handleSaveProfile(values, resetForm)}
+          >
+            {({ handleChange, handleBlur, handleSubmit, values, errors, touched, setFieldValue, resetForm }) => (
+              <>
             {/* Profile Image */}
             <TouchableOpacity
               onPress={isEditing ? pickImage : null}
@@ -292,45 +438,63 @@ const UserProfile = () => {
 
             {/* Pet Profiles Section */}
             <View style={styles.petSection}>
-              <Text style={[styles.sectionTitle, dynamicTextStyle]}>My Pets</Text>
-              {petProfiles.map((pet) => (
-                <View key={pet.id} style={styles.petProfile}>
-                  {pet.image ? (
-                    <Image source={{ uri: pet.image }} style={styles.petImage} />
-                  ) : (
-                    <Image source={require('../assets/pet-placeholder.png')} style={styles.petImage} />
-                  )}
-                  {isEditing ? (
-                    <TextInput
-                      style={[styles.petNameInput, { color: dynamicTextStyle.color, borderColor: dynamicTextStyle.color }]}
-                      value={pet.name}
-                      onChangeText={(text) => updatePetName(pet.id, text)}
-                      accessibilityLabel={`Pet name input for ${pet.name}`}
-                    />
-                  ) : (
-                    <Text style={[styles.petName, dynamicTextStyle]}>{pet.name}</Text>
-                  )}
-                  {isEditing && (
-                    <TouchableOpacity
-                      style={styles.removePetButton}
-                      onPress={() => removePetProfile(pet.id)}
-                      accessibilityLabel={`Remove pet profile for ${pet.name}`}
-                    >
-                      <Text style={styles.removePetButtonText}>Remove</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ))}
-              {isEditing && (
-                <TouchableOpacity
-                  style={styles.addPetButton}
-                  onPress={addPetProfile}
-                  accessibilityLabel="Add pet profile button"
-                >
-                  <Text style={styles.addPetButtonText}>Add Pet</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+  <Text style={[styles.sectionTitle, dynamicTextStyle]}>My Pets</Text>
+  {Array.isArray(petProfiles) && petProfiles.length === 0 ?(
+    <Text style={{ textAlign: 'center', color: dynamicTextStyle.color }}>
+      You don't have any pets yet.
+    </Text>
+  ) : (
+    Array.isArray(petProfiles) &&
+  petProfiles.map((pet) => (
+      <View key={pet.petId} style={styles.petProfile}>
+        <Image
+          source={ require('../assets/pet-placeholder.png')}
+          style={styles.petImage}
+        />
+        {isEditing ? (
+          <TextInput
+          style={[styles.petNameInput, { color: dynamicTextStyle.color, borderColor: dynamicTextStyle.color }]}
+          value={petNameEdits[pet.petId] ?? pet.petName}
+          onChangeText={(text) =>
+            setPetNameEdits((prev) => ({ ...prev, [pet.petId]: text }))
+          }
+          onBlur={() => {
+            const newName = petNameEdits[pet.petId];
+            if (newName && newName !== pet.petName) {
+              updatePetName(pet.petId, newName);
+            }
+          }}
+        />
+        
+        ) : (
+          <Text style={[styles.petName, dynamicTextStyle]}>
+  {pet.petName} ({pet.breed || 'Unknown breed'})
+</Text>
+
+        )}
+        {isEditing && (
+          <TouchableOpacity
+            style={styles.removePetButton}
+            onPress={() => removePetProfile(pet.petId)} 
+
+          >
+            <Text style={styles.removePetButtonText}>Remove</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    ))
+  )}
+  {/* Add Pet Button */}
+  {isEditing && (
+    <TouchableOpacity
+      style={styles.addPetButton}
+      onPress={addPetProfile}
+      accessibilityLabel="Add Pet Button"
+    >
+      <Text style={styles.addPetButtonText}>Add Pet</Text>
+    </TouchableOpacity>
+  )}
+  </View>
 
             {/* Edit / Save / Cancel Buttons */}
             {isEditing ? (
@@ -375,6 +539,8 @@ const UserProfile = () => {
         )}
       </Formik>
     </ScrollView>
+    </TouchableWithoutFeedback>
+  </KeyboardAvoidingView>
   );
 };
 

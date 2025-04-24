@@ -1,15 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Text, Button, StyleSheet, Platform, ActivityIndicator, Alert, Image, ImageBackground } from 'react-native';
+import {
+    View,
+    TextInput,
+    Text,
+    Button,
+    StyleSheet,
+    Platform,
+    ActivityIndicator,
+    Alert,
+    Image,
+    ImageBackground,
+} from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const EditPet = () => {
     const route = useRoute();
     const navigation = useNavigation();
     const { petId } = route.params;
 
-    // State variables for pet details
     const [petName, setPetName] = useState('');
     const [petBreed, setPetBreed] = useState('');
     const [petBirthday, setPetBirthday] = useState(null);
@@ -18,28 +29,30 @@ const EditPet = () => {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [error, setError] = useState('');
 
-    // Fetch existing pet details (simulate API call)
     useEffect(() => {
         const fetchPetDetails = async () => {
-            // Replace this with your actual API call
-            const details = {
-                id: petId,
-                name: 'Buddy',
-                breed: 'Golden Retriever',
-                birthday: '2019-06-15',
-                image: 'https://example.com/path-to-pet-image.jpg',
-            };
+            try {
+                const userId = await AsyncStorage.getItem('userId');
+                const url = `https://test2.playpals-app.com/api/pets/${userId}/${petId}`;
+                const response = await fetch(url);
+                const text = await response.text();
 
-            setPetName(details.name);
-            setPetBreed(details.breed);
-            setPetBirthday(new Date(details.birthday));
-            setPetImage(details.image);
+                if (!response.ok) throw new Error('Failed to fetch pet');
+
+                const data = JSON.parse(text);
+                setPetName(data.petName || '');
+                setPetBreed(data.breed || '');
+                setPetBirthday(data.birthday ? new Date(data.birthday) : null);
+                setPetImage(data.profileImage || null);
+            } catch (error) {
+                console.error('❌ Error fetching pet:', error);
+                Alert.alert('Error', 'Failed to load pet details.');
+            }
         };
 
         fetchPetDetails();
     }, [petId]);
 
-    // Handle date change from the date picker
     const handleDateChange = (event, selectedDate) => {
         setShowDatePicker(Platform.OS === 'ios');
         if (selectedDate) {
@@ -47,7 +60,6 @@ const EditPet = () => {
         }
     };
 
-    // Function to pick an image from the media library
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
@@ -55,19 +67,55 @@ const EditPet = () => {
             return;
         }
 
-        let result = await ImagePicker.launchImageLibraryAsync({
+        const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [4, 3],
             quality: 1,
         });
 
-        if (!result.cancelled) {
-            setPetImage(result.uri);
+        if (!result.canceled) {
+            setPetImage(result.assets[0].uri);
         }
     };
 
-    // Handle updating pet details
+    const uploadImageToServer = async (localUri) => {
+        const filename = localUri.split('/').pop();
+        const match = /\.(\w+)$/.exec(filename ?? '');
+        const type = match ? `image/${match[1]}` : 'image';
+
+        const formData = new FormData();
+        formData.append('image', {
+            uri: localUri,
+            name: filename,
+            type,
+        });
+
+        try {
+            const response = await fetch('https://test2.playpals-app.com/api/uploads', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.log('Upload error:', errorText);
+                throw new Error('Image upload failed');
+            }
+
+            const data = await response.json();
+            const fullUrl = `https://test2.playpals-app.com${data.imageUrl}`;
+            console.log('✅ Uploaded image URL:', fullUrl);
+            return fullUrl;
+        } catch (err) {
+            console.error('❌ Image upload failed:', err);
+            throw err;
+        }
+    };
+
     const handleUpdatePet = async () => {
         if (!petName.trim() || !petBreed.trim() || !petBirthday) {
             setError('Please fill in all fields correctly.');
@@ -78,24 +126,36 @@ const EditPet = () => {
         setIsLoading(true);
 
         try {
-            // Simulate an API update delay (replace with actual API call)
-            await new Promise((resolve) => setTimeout(resolve, 2000));
+            const userId = await AsyncStorage.getItem('userId');
 
-            const updatedPet = {
-                id: petId,
-                name: petName,
+            let imageUrl = null;
+            if (petImage && petImage.startsWith('file://')) {
+                imageUrl = await uploadImageToServer(petImage);
+            } else {
+                imageUrl = petImage;
+            }
+
+            const payload = {
+                petName,
                 breed: petBreed,
-                birthday: petBirthday,
-                image: petImage,
+                birthday: petBirthday.toISOString(),
+                profileImage: imageUrl,
             };
 
-            console.log('Updated pet:', updatedPet);
+            const url = `https://test2.playpals-app.com/api/pets/${userId}/${petId}`;
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const responseText = await response.text();
+            if (!response.ok) throw new Error(responseText || 'Failed to update pet.');
 
             Alert.alert('Success', 'Pet details updated successfully!', [
-                {
-                    text: 'OK',
-                    onPress: () => navigation.goBack(),
-                },
+                { text: 'OK', onPress: () => navigation.goBack() },
             ]);
         } catch (err) {
             console.error('Error updating pet:', err);
@@ -106,13 +166,11 @@ const EditPet = () => {
     };
 
     return (
-        <ImageBackground
-            source={require('../assets/petBackground.jpg')}
-            style={styles.background}
-        >
+        <ImageBackground source={require('../assets/petBackground.jpg')} style={styles.background}>
             <View style={styles.container}>
                 <Text style={styles.title}>Edit Pet Details</Text>
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
                 <TextInput
                     style={styles.input}
                     placeholder="Pet Name"
@@ -127,14 +185,15 @@ const EditPet = () => {
                     onChangeText={setPetBreed}
                     placeholderTextColor="#8B7E66"
                 />
+
                 <View style={styles.dateButton}>
                     <Button title="Select Birthday" onPress={() => setShowDatePicker(true)} color="#FF6F61" />
                 </View>
-                {petBirthday && (
-                    <Text style={styles.birthdayText}>
-                        Selected Birthday: {petBirthday.toLocaleDateString()}
-                    </Text>
-                )}
+
+                <Text style={styles.birthdayText}>
+                    {petBirthday ? `Selected Birthday: ${petBirthday.toLocaleDateString()}` : 'No birthday selected'}
+                </Text>
+
                 {showDatePicker && (
                     <DateTimePicker
                         value={petBirthday || new Date()}
@@ -144,12 +203,17 @@ const EditPet = () => {
                         maximumDate={new Date()}
                     />
                 )}
+
                 <View style={styles.imageButton}>
                     <Button title="Upload Pet Picture" onPress={pickImage} color="#FF6F61" />
                 </View>
-                {petImage && (
+
+                {petImage ? (
                     <Image source={{ uri: petImage }} style={styles.image} />
+                ) : (
+                    <Image source={require('../assets/pet-placeholder.png')} style={styles.image} />
                 )}
+
                 {isLoading ? (
                     <ActivityIndicator size="large" color="#6D4C41" style={{ marginVertical: 20 }} />
                 ) : (
@@ -180,9 +244,6 @@ const styles = StyleSheet.create({
         fontSize: 30,
         fontWeight: 'bold',
         color: '#4A4A4A',
-        textShadowColor: '#fff',
-        textShadowOffset: { width: 2, height: 2 },
-        textShadowRadius: 5,
         marginBottom: 20,
     },
     input: {
@@ -221,6 +282,7 @@ const styles = StyleSheet.create({
         width: '100%',
         marginTop: 10,
     },
+    
     errorText: {
         color: '#D9534F',
         marginBottom: 10,
