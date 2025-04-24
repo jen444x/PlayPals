@@ -1,15 +1,27 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView,
-  TouchableWithoutFeedback, Keyboard, Image, Platform, ActivityIndicator, Animated
-} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Audio } from 'expo-av';
-import ConfettiCannon from 'react-native-confetti-cannon';
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Image,
+  Platform,
+  ActivityIndicator,
+  Animated,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Audio } from "expo-av";
+import ConfettiCannon from "react-native-confetti-cannon";
+import { BASE_URL } from "../config";
 
 export default function LoginScreen({ navigation }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [secureEntry, setSecureEntry] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -41,9 +53,9 @@ export default function LoginScreen({ navigation }) {
 
     try {
       const response = await fetch(`${BASE_URL}api/auth/loginUser`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
       });
@@ -51,28 +63,28 @@ export default function LoginScreen({ navigation }) {
       const data = await response.json();
 
       if (response.ok) {
-        await AsyncStorage.setItem('token', data.token);
-        await AsyncStorage.setItem('userId', data.userId.toString());
-        await AsyncStorage.setItem('username', data.username);
-        const storedUserId = await AsyncStorage.getItem('userId');
-        const storedUsername = await AsyncStorage.getItem('username');
+        await AsyncStorage.setItem("token", data.token);
+        await AsyncStorage.setItem("userId", data.userId.toString());
+        await AsyncStorage.setItem("username", data.username);
+        const storedUserId = await AsyncStorage.getItem("userId");
+        const storedUsername = await AsyncStorage.getItem("username");
 
-        const { sound } = await Audio.Sound.createAsync(require('../assets/bark.mp3'));
+        const { sound } = await Audio.Sound.createAsync(
+          require("../assets/bark.mp3")
+        );
         await sound.playAsync();
 
         setShowConfetti(true);
 
-setTimeout(() => {
-  Animated.timing(fadeAnim, {
-    toValue: 1,
-    duration: 1200,
-    useNativeDriver: true,
-  }).start(() => {
-    navigation.navigate('Navigation');
-  });
-}, 1800); // wait for confetti to pop before fade
-
-
+        setTimeout(() => {
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 1200,
+            useNativeDriver: true,
+          }).start(() => {
+            navigation.navigate("Navigation");
+          });
+        }, 1800); // wait for confetti to pop before fade
       } else {
         Alert.alert("Login Failed", data?.message || "Invalid credentials");
       }
@@ -85,11 +97,16 @@ setTimeout(() => {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}> 
-      <TouchableWithoutFeedback onPress={Platform.OS === 'web' ? null : Keyboard.dismiss}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <TouchableWithoutFeedback
+        onPress={Platform.OS === "web" ? null : Keyboard.dismiss}
+      >
         <View style={styles.container}>
           <Animated.Image
-            source={require('../assets/pet_logo.png')}
+            source={require("../assets/pet_logo.png")}
             style={[
               styles.logo,
               {
@@ -97,12 +114,12 @@ setTimeout(() => {
                   {
                     scale: pawAnim.interpolate({
                       inputRange: [0, 1],
-                      outputRange: [0.5, 1]
-                    })
-                  }
+                      outputRange: [0.5, 1],
+                    }),
+                  },
                 ],
-                opacity: pawAnim
-              }
+                opacity: pawAnim,
+              },
             ]}
           />
 
@@ -127,8 +144,13 @@ setTimeout(() => {
               onChangeText={setPassword}
               secureTextEntry={secureEntry}
             />
-            <TouchableOpacity onPress={togglePasswordVisibility} style={styles.toggleButton}>
-              <Text style={styles.toggleText}>{secureEntry ? 'Show' : 'Hide'}</Text>
+            <TouchableOpacity
+              onPress={togglePasswordVisibility}
+              style={styles.toggleButton}
+            >
+              <Text style={styles.toggleText}>
+                {secureEntry ? "Show" : "Hide"}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -153,15 +175,21 @@ setTimeout(() => {
               style={[
                 styles.button,
                 (!email || !password) && styles.disabledButton,
-                { transform: [{ scale: buttonScale }] }
+                { transform: [{ scale: buttonScale }] },
               ]}
             >
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Login</Text>}
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Login</Text>
+              )}
             </Animated.View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-            <Text style={styles.linkText}>New here? Sign up and join the pack! 🐕</Text>
+          <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
+            <Text style={styles.linkText}>
+              New here? Sign up and join the pack! 🐕
+            </Text>
           </TouchableOpacity>
 
           {showConfetti && (
@@ -185,46 +213,76 @@ setTimeout(() => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: '#FCEECF', padding: 20
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FCEECF",
+    padding: 20,
   },
   logo: {
-    width: 200, height: 200, marginBottom: 20, resizeMode: 'contain'
+    width: 200,
+    height: 200,
+    marginBottom: 20,
+    resizeMode: "contain",
   },
   title: {
-    fontSize: 26, fontWeight: 'bold', color: '#5A3E36', marginBottom: 20
+    fontSize: 26,
+    fontWeight: "bold",
+    color: "#5A3E36",
+    marginBottom: 20,
   },
   input: {
-    width: '80%', padding: 12, borderWidth: 2, borderColor: '#E07A5F',
-    backgroundColor: '#FFF5E4', marginBottom: 10, borderRadius: 25, textAlign: 'center'
+    width: "80%",
+    padding: 12,
+    borderWidth: 2,
+    borderColor: "#E07A5F",
+    backgroundColor: "#FFF5E4",
+    marginBottom: 10,
+    borderRadius: 25,
+    textAlign: "center",
   },
   passwordContainer: {
-    flexDirection: 'row', alignItems: 'center', width: '80%',
-    borderWidth: 2, borderColor: '#E07A5F', borderRadius: 25,
-    backgroundColor: '#FFF5E4', marginBottom: 10, paddingRight: 10
+    flexDirection: "row",
+    alignItems: "center",
+    width: "80%",
+    borderWidth: 2,
+    borderColor: "#E07A5F",
+    borderRadius: 25,
+    backgroundColor: "#FFF5E4",
+    marginBottom: 10,
+    paddingRight: 10,
   },
   toggleButton: {
-    padding: 10
+    padding: 10,
   },
   toggleText: {
-    color: '#E07A5F', fontWeight: 'bold'
+    color: "#E07A5F",
+    fontWeight: "bold",
   },
   button: {
-    backgroundColor: '#E07A5F', padding: 12, width: '80%',
-    alignItems: 'center', borderRadius: 25, marginTop: 10
+    backgroundColor: "#E07A5F",
+    padding: 12,
+    width: "80%",
+    alignItems: "center",
+    borderRadius: 25,
+    marginTop: 10,
   },
   disabledButton: {
-    backgroundColor: '#e8a899'
+    backgroundColor: "#e8a899",
   },
   buttonText: {
-    color: 'white', fontSize: 18, fontWeight: 'bold'
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
   },
   linkText: {
-    marginTop: 15, color: '#D1495B', fontSize: 16
+    marginTop: 15,
+    color: "#D1495B",
+    fontSize: 16,
   },
   fadeOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#FCEECF',
+    backgroundColor: "#FCEECF",
     zIndex: 10,
-  }
+  },
 });
