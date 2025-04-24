@@ -23,10 +23,11 @@ io.on('connection', socket => {
     console.log(`User ${socket.id} connected`) //Logging user ID
   
     // Upon connection - only to user
-    socket.emit("message", buildMsg(ADMIN, "Welcome to Chat App!"))
+    // socket.emit("message", buildMsg(ADMIN, "Welcome to Chat App!"))
   
-    socket.on('enterRoom', async ({ name, room }) => {
+    socket.on('enterRoom', async ({ name, room, chatId, userId }) => {
       //Leave previous room
+      console.log("Entering room")
       const prevRoom = getUser(socket.id)?.room
   
       if (prevRoom) {
@@ -35,22 +36,30 @@ io.on('connection', socket => {
         `${name} has left the room`))
       }
   
-      const user = activateUser(socket.id, name, room)
+      const user = activateUser(socket.id, name, room);
 
       try {
         const checkRoom = await db.query(`
-            SELECT "roomName" FROM "chatInfo" WHERE "roomName" = $1
-            `, [room]
+            SELECT "chatID" FROM "chatInfo" WHERE "chatID" = $1
+            `, [chatId]
         )
 
         if (checkRoom.rows.length === 0) {
-            await db.query(
-                `INSERT INTO "chatInfo" ("roomName") VALUES ($1)`, [room]
-            )
+            const insertRoom = await db.query(
+                `INSERT INTO "chatInfo" DEFAULT VALUES RETURNING "chatID"`
+            );
+            chatId = insertRoom.rows[0].chatID;
             console.log(`"Room ${room}" created in DB`)
         } else {
+            chatId = checkRoom.rows[0].chatID;
             console.log(`Room already exists`)
         }
+        console.log(chatId, userId)
+        await db.query(`
+          INSERT INTO "chatUsers" ("chatID", "userID")
+          VALUES ($1, $2)
+          ON CONFLICT DO NOTHING
+        `, [chatId, userId]);
       } catch (err) {
         console.error("Error saving room:", err)
       }
@@ -65,8 +74,8 @@ io.on('connection', socket => {
       //Join room
       socket.join(user.room)
       //To user who joined
-      socket.emit('message', buildMsg(ADMIN, `You have joined the
-        ${user.room} chat room`))
+      // socket.emit('message', buildMsg(ADMIN, `You have joined the
+      //   ${user.room} chat room`))
       //TO everyone else
       socket.broadcast.to(user.room).emit('message', buildMsg(
         ADMIN, `${user.name} has joined the room`))
@@ -79,39 +88,53 @@ io.on('connection', socket => {
         rooms: getAllActiveRooms
       })
 
-      const result = await db.query(
-        `SELECT * FROM messages
-        WHERE "chatId" = $1
-        ORDER BY "messageId" DESC LIMIT 10`,
-        ['1']
-      );
-      const recentMessages = result.rows.reverse().map(msg => {
-        return {
-            name: 'User', // replace with actual username if available
-            text: msg.message,
-            time: new Intl.DateTimeFormat('default', {
-                hour: 'numeric',
-                minute: 'numeric',
-                second: 'numeric'
-            }).format(new Date())
-        }
-    });
+      try {
+        console.log("Fetching messages")
+        const result = await db.query(
+          `SELECT 
+          messages."messageId",
+          messages."senderId",
+          users.username AS "senderName",
+          messages."message",
+          messages."timeSent",
+          messages."timeRead"
+          FROM messages
+          JOIN users ON messages."senderId" = users.id
+          WHERE messages."chatId" = $1
+          ORDER BY messages."timeSent" DESC`,
+          [ chatId ]
+        );
+  
+        const recentMessages = result.rows.reverse().map(msg => {
+          return {
+              name: msg.senderName, // replace with actual username if available
+              text: msg.message,
+              time: msg.timeSent
+          }
+        });
       socket.emit('chatHistory', recentMessages);
       console.log(recentMessages)
+      } catch (err) {
+        console.error("Error fetching chat histroy", err)
+      }
     })
   
-    socket.on('message', async ({ name, text }) => {
-      const room = getUser(socket.id)?.room
+    socket.on('message', async ({ name, text, userId, chatId }) => {
+      const user = getUser(socket.id);
+      const room = user?.room;
+      console.log("More test logs")
 
-      if (room) {
+      if (room && chatId && userId) {
+        console.log("Inserting message");
         io.to(room).emit('message', buildMsg(name, text))
+      } else {
+        console.log("No message emitted")
       }
       try {
-        const query = `
-        INSERT INTO messages ("chatId", "sentBy", message)
+        await db.query(`
+        INSERT INTO messages ("chatId", "senderId", message)
         VALUES ($1, $2, $3)
-        `
-        await db.query(query, ['1', '1', text]);
+        `, [chatId, userId, text]);
       } catch (err) {
         console.error('Error saving message:', err);
       }

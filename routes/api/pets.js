@@ -170,14 +170,14 @@ router.delete("/:userId/:petId", async (req, res) => {
   const petId = req.params.petId;
   // check pet exists
   try {
-    const pet = await pool.query("SELECT * FROM pets WHERE pid = $1", [petId]);
+    const pet = await pool.query('SELECT * FROM pets WHERE "petId" = $1', [petId]);
 
     if (pet.rows.length === 0) {
       return res.status(404).json({ message: "Pet not found." });
     }
 
     // delete pet
-    await pool.query("DELETE FROM pets WHERE pid = $1", [petId]);
+    await pool.query('DELETE FROM pets WHERE "petId" = $1', [petId]);
     res.status(200).json({ message: "Pet deleted successfully." });
   } catch (error) {
     console.log("Error deleting pet:", error.message);

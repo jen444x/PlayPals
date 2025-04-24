@@ -64,9 +64,11 @@ router.post("/submitFeedPost/:userId", upload.single('media'), async (req, res) 
 });
 
 router.get('/getPosts/:userId', async (req, res) => {
-    try {
-        const posts = await db.query(
-          `SELECT 
+  const { userId } = req.params;
+
+  try {
+      const posts = await db.query(
+        `SELECT 
             post.id,
             post.body AS caption,
             post."userId",
@@ -74,17 +76,19 @@ router.get('/getPosts/:userId', async (req, res) => {
             post_media."imageUrl" AS uri,
             post_media."media_type" AS type,
             users.username
-            FROM post
-            JOIN post_media ON post.id = post_media."postId"
-            JOIN users ON post."userId" = users.id
-            ORDER BY post.created_at DESC
-            `
-        )
-        res.status(200).json(posts.rows);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).json({ error: 'Server error while fetching feed' });
-    }
+          FROM post
+          JOIN post_media ON post.id = post_media."postId"
+          JOIN users ON post."userId" = users.id
+          JOIN follows ON follows."followedId" = post."userId"
+          WHERE follows."followerId" = $1
+          ORDER BY post.created_at DESC
+          `, [userId]
+      )
+      res.status(200).json(posts.rows);
+  } catch (err) {
+      console.error(err.message);
+      res.status(500).json({ error: 'Server error while fetching feed' });
+  }
 });
 
 module.exports = router;
