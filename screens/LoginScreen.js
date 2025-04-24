@@ -40,7 +40,7 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
 
     try {
-      const response = await fetch('https://test2.playpals-app.com/api/auth/loginUser', {
+      const response = await fetch(`${BASE_URL}api/auth/loginUser`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -53,6 +53,9 @@ export default function LoginScreen({ navigation }) {
       if (response.ok) {
         await AsyncStorage.setItem('token', data.token);
         await AsyncStorage.setItem('userId', data.userId.toString());
+        await AsyncStorage.setItem('username', data.username);
+        const storedUserId = await AsyncStorage.getItem('userId');
+        const storedUsername = await AsyncStorage.getItem('username');
 
         const { sound } = await Audio.Sound.createAsync(require('../assets/bark.mp3'));
         await sound.playAsync();
@@ -82,8 +85,8 @@ setTimeout(() => {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}> 
+      <TouchableWithoutFeedback onPress={Platform.OS === 'web' ? null : Keyboard.dismiss}>
         <View style={styles.container}>
           <Animated.Image
             source={require('../assets/pet_logo.png')}

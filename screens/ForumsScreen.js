@@ -12,6 +12,7 @@ import {
   Image,
   ScrollView
 } from 'react-native';
+import { BASE_URL } from '../config.js';
 
 export default function ForumsScreen({ navigation }) {
   const [discussions, setDiscussions] = useState([]);
@@ -87,31 +88,46 @@ export default function ForumsScreen({ navigation }) {
 
   // Simulated API call to fetch discussions with pagination using a slice of the static data
   const fetchDiscussions = async (pageNumber = 1, isRefreshing = false) => {
-    await new Promise(resolve => setTimeout(resolve, 500)); // simulate network delay
-    const startIndex = (pageNumber - 1) * postsPerPage;
-    const endIndex = startIndex + postsPerPage;
-    const newDiscussions = allPosts.slice(startIndex, endIndex);
+    try {
+      const topicQuery = selectedTopic === 'All' ? '' : `&topic=${selectedTopic}`;
+      const res = await fetch(`${BASE_URL}api/discussions/getThreads?page=${pageNumber}${topicQuery}`);
 
-    if (isRefreshing) {
-      setDiscussions(newDiscussions);
-    } else {
-      setDiscussions(prev => {
-        const combined = [...prev, ...newDiscussions];
-        // Filter out duplicates based on the unique post ID
-        return combined.filter((item, index) => 
-          combined.findIndex(d => d.id === item.id) === index
-        );
-      });
-    }
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Backend error response:", text);
+        throw new Error(`Server responded with status ${res.status}`);
+      }
 
-    if (endIndex >= allPosts.length) {
-      setHasMore(false);
+      const data = await res.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error("Expected an array but got something else");
+      }
+
+      if (isRefreshing) {
+        setDiscussions(data);
+      } else {
+        setDiscussions(prev => {
+          const combined = [...prev, ...data];
+          // Filter out duplicates based on the unique post ID
+          return combined.filter((item, index) => 
+            combined.findIndex(d => d.id === item.id) === index
+          );
+        });
+      }
+
+      if (!data || data.length === 0 || data.length < postsPerPage) {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Error fetching discussions:", error);
     }
   };
 
   useEffect(() => {
-    fetchDiscussions();
-  }, []);
+    setPage(1);
+    fetchDiscussions(1, true);
+  }, [selectedTopic]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -125,9 +141,9 @@ export default function ForumsScreen({ navigation }) {
     if (!hasMore || loadingMoreRef.current) return;
     loadingMoreRef.current = true;
     const nextPage = page + 1;
-    setPage(nextPage);
     setLoadingMore(true);
     await fetchDiscussions(nextPage);
+    setPage(nextPage);
     setLoadingMore(false);
     loadingMoreRef.current = false;
   };
@@ -140,7 +156,7 @@ export default function ForumsScreen({ navigation }) {
       </View>
     );
   };
-
+  
   const renderDiscussionItem = ({ item }) => (
     <TouchableOpacity 
       style={styles.discussionItem}

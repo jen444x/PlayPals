@@ -1,5 +1,5 @@
-import React, { useLayoutEffect } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useLayoutEffect, useState } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity,TextInput } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import CalendarScreen from './CalendarScreen';
 import CreatePostScreen from './CreatePostScreen'
@@ -7,11 +7,13 @@ import ForumsScreen from './ForumsScreen';
 import AppSettings from './AppSettings';
 import FeedScreen from './FeedScreen'; 
 import HomeScreen from './HomeScreen';
+import { BASE_URL } from '../config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 //Personal feed component would go here
 function FeedScreenRender() {
   return (
-     <FeedScreen /> 
+     <FeedScreen/> 
   );
 }
 
@@ -61,9 +63,42 @@ const styles = StyleSheet.create({
 const Tab = createBottomTabNavigator();
 
 export default function PersonalFeedNav({ navigation }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+
+  
+const handleSearch = async () => {
+  if (!searchQuery) return;
+
+  try {
+    const res = await fetch(`${BASE_URL}api/users/search?q=${searchQuery}`);
+    const data = await res.json();
+    setSearchResults(data);
+
+    // If only one user, navigate directly
+    if (data.length === 1) {
+      navigation.navigate('PublicProfile', { userId: data[0].id });
+    } else {
+      setSearchResults(data);
+    }
+
+    console.log("Navigating to UserProfile with userId:", data[0].id);
+    navigation.navigate("PublicProfile", { userId: data[0].id });
+
+
+    // Otherwise, show a list (optional)
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   //Create the PlayPals header
+
   useLayoutEffect(() => {
+    const setupHeader = async () => {
+    const userId = await AsyncStorage.getItem('userId');
+    const username = await AsyncStorage.getItem('username');
+
     navigation.setOptions({
       title: "PlayPals",
       headerStyle: { backgroundColor: "#E4E4E4" },
@@ -75,8 +110,26 @@ export default function PersonalFeedNav({ navigation }) {
           />
         </TouchableOpacity>
       ),
+      headerTitle: () => (
+        <TextInput
+          placeholder="Search users..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          onSubmitEditing={handleSearch}
+          returnKeyType='search'
+          style={{
+            backgroundColor: '#fff',
+            paddingHorizontal: 10,
+            paddingVertical: 5,
+            borderRadius: 10,
+            width: 220,
+            fontSize: 16,
+            textAlign: 'center',
+          }}
+        />
+      ),
       headerLeft: () => (
-        <TouchableOpacity onPress={() => navigation.navigate("Profile")}> 
+        <TouchableOpacity onPress={() => navigation.navigate("Profile", {userId: parseInt(userId) })}> 
           <Image 
             source={require('../assets/profile.png')} // Load the profile image later this will be a users pfp
             style={{ width: 30, height: 30, marginLeft: 10 }} // Adjust the size and margin as needed
@@ -84,7 +137,9 @@ export default function PersonalFeedNav({ navigation }) {
         </TouchableOpacity>
       ),
     });
-  }, [navigation]);
+  }
+  setupHeader();
+  }, [navigation, searchQuery]);
 
   //the tab navigator for the different tabs at the bottom of screen
   return (

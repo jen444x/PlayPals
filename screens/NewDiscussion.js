@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -13,6 +13,8 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from '../config.js';
 
 export default function NewDiscussion() {
   const navigation = useNavigation();
@@ -21,34 +23,65 @@ export default function NewDiscussion() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Topics list and selected topic state
-  const topics = ["Training", "Toys", "Nutrition", "Health", "Behavior", "General"];
-  const [selectedTopic, setSelectedTopic] = useState(topics[0]);
+  //const topics = ["Training", "Toys", "Nutrition", "Health", "Behavior", "General"];
+  const [topics, setTopics] = useState([]);
+  const [selectedTopicId, setSelectedTopicId] = useState(null);
 
   const MAX_TITLE_LENGTH = 150;
   const MAX_CONTENT_LENGTH = 500;
 
-  const handlePostDiscussion = () => {
+  useEffect(() => {
+    const fetchTopics = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}api/discussions/getTopics`);
+        const data = await res.json();
+        setTopics(data);
+        setSelectedTopicId(data[0]?.id);
+      } catch (err) {
+        console.error("Failed to fetch topics", err);
+      }
+    };
+  
+    fetchTopics();
+  }, []);
+
+  const handlePostDiscussion =  async () => {
     if (!discussionTitle.trim() || !discussionContent.trim()) {
       Alert.alert('Missing Information', 'Please fill in both the title and content.');
       return;
     }
     
-    setIsLoading(true);
-    
-    // Simulate posting the discussion (replace with your API call if needed)
-    setTimeout(() => {
+    try {
+      setIsLoading(true);
+
+      const userId = await AsyncStorage.getItem('userId');
+    if (!userId) throw new Error("User not authenticated");
+
+    const res = await fetch(`${BASE_URL}api/discussions/submitForumThread`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topicId: selectedTopicId,
+        title: discussionTitle.trim(),
+        content: discussionContent.trim(),
+        userId: parseInt(userId),
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Unknown error");
+
+    Alert.alert('Success', 'Your discussion has been posted.', [
+      { text: 'OK', onPress: () => navigation.goBack() },
+    ]);
+
+    } catch (err) {
+      console.error("Post failed:", err);
+      Alert.alert("Error", err.message || "Something went wrong.");
+    } finally {
       setIsLoading(false);
-      Alert.alert(
-        'Discussion Posted', 
-        `Your discussion on "${selectedTopic}" has been posted successfully!`,
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
-    }, 1500);
+    }
+    
   };
 
   return (
@@ -71,19 +104,19 @@ export default function NewDiscussion() {
           <View style={styles.topicsContainer}>
             {topics.map((topic, index) => (
               <TouchableOpacity 
-                key={index}
+                key={topic.id}
                 style={[
                   styles.topicChip, 
-                  selectedTopic === topic && styles.selectedTopicChip
+                  selectedTopicId === topic.id && styles.selectedTopicChip
                 ]}
-                onPress={() => setSelectedTopic(topic)}
-                accessibilityLabel={`Select topic ${topic}`}
+                onPress={() => setSelectedTopicId(topic.id)}
+                accessibilityLabel={`Select topic ${topic.id}`}
               >
                 <Text style={[
                   styles.topicChipText,
-                  selectedTopic === topic && styles.selectedTopicChipText
+                  selectedTopicId === topic.id && styles.selectedTopicChipText
                 ]}>
-                  {topic}
+                  {topic.name}
                 </Text>
               </TouchableOpacity>
             ))}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -8,25 +8,43 @@ import {
   StyleSheet,
   Image,
   ImageBackground,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-
-// Dummy data representing conversation items
-const conversations = [
-  { id: '1', chatUser: 'Alice' },
-  { id: '2', chatUser: 'Bob' },
-  { id: '3', chatUser: 'Charlie' },
-  // Add more conversations as needed
-];
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from '../config';
 
 export default function ConversationsScreen() {
   const navigation = useNavigation();
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchChats = async () => {
+      try {
+        const userId = await AsyncStorage.getItem('userId');
+        if (!userId) throw new Error("User not logged in");
+
+        const res = await fetch(`${BASE_URL}api/chats/${userId}`);
+        const data = await res.json();
+        setConversations(data);
+      } catch (err) {
+        console.error("Error fetching chats:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchChats();
+  }, []);
 
   // Render each conversation item
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.itemContainer}
-      onPress={() => navigation.navigate('Chat', { chatUser: item.chatUser })}
+      onPress={() => navigation.navigate('Chat', { 
+        chatUser: item.chatUser,
+        chatId: item.chatID })}
       accessibilityLabel={`Chat with ${item.chatUser}`}
     >
       <Text style={styles.itemText}>{item.chatUser}</Text>
@@ -49,12 +67,16 @@ export default function ConversationsScreen() {
           />
           <Text style={styles.headerTitle}>Pet Chats</Text>
         </View>
+        {loading ? (
+          <ActivityIndicator size="large" color="#8B4513" style={{ marginTop: 20 }} />
+        ) : (
         <FlatList
           data={conversations}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
         />
+        )}
       </ImageBackground>
     </SafeAreaView>
   );
