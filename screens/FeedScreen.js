@@ -41,18 +41,66 @@ export default function FeedScreen() {
   const [feedData, setFeedData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [likedPosts, setLikedPosts] = useState(new Set());
+  const [disabledLikes, setDisabledLikes] = useState(new Set());
+
 
   const fetchFeed = async () => {
     try {
       const userId = await AsyncStorage.getItem('userId');
-      const response = await fetch(`https://test2.playpals-app.com/api/posts/getPosts/${userId}`);
+      const response = await fetch(`${BASE_URL}api/posts/getPosts/${userId}`);
       const data = await response.json();
       setFeedData(data);
+
+      const likedPostIds = data
+      .filter(post => post.likedByUser)
+      .map(post => post.id.toString());
+
+      setLikedPosts(new Set(likedPostIds));
     } catch (error) {
       console.error('Error fetching feed:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const likePost = async (postId) => {
+    const postIdStr = postId.toString();
+
+    setDisabledLikes((prev) => new Set(prev).add(postIdStr));
+
+    setFeedData((prevFeed) =>
+      prevFeed.map((post) => {
+        if (post.id.toString() === postIdStr) {
+          return {
+            ...post,
+            likedByUser: !post.likedByUser,
+          };
+        }
+        return post;
+      })
+    );
+
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      await fetch(`${BASE_URL}/api/posts/likePost`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ postId, userId }),
+      });
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
+
+    setTimeout(() => {
+      setDisabledLikes((prev) => {
+        const updated = new Set(prev);
+        updated.delete(postIdStr);
+        return updated;
+      });
+    }, 3000);
   };
 
   useEffect(() => {
@@ -89,13 +137,22 @@ export default function FeedScreen() {
       )}
       <View style={styles.postDetails}>
         {/* Clickable username navigates to PublicProfile */}
-        <TouchableOpacity onPress={() => navigation.navigate('PublicProfile', { username: item.username })}>
+        <TouchableOpacity onPress={() => navigation.navigate('PublicProfile', { userId: item.userId })}>
           <Text style={styles.username}>{item.username}</Text>
         </TouchableOpacity>
         <Text style={styles.caption}>{item.caption}</Text>
         <Text style={styles.timestamp}>{item.timestamp}</Text>
-        <TouchableOpacity style={styles.likeButton}>
-          <Text style={styles.likeButtonText}>❤️ Like</Text>
+        <TouchableOpacity 
+          style={[
+            styles.likeButton,
+            item.likedByUser && { backgroundColor: '#E91E63' },
+          ]}
+          onPress={() => likePost(item.id)}
+          disabled={disabledLikes.has(item.id.toString())}
+        >
+          <Text style={styles.likeButtonText}>
+            {item.likedByUser ? '💔 Unlike' : '❤️ Like'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>

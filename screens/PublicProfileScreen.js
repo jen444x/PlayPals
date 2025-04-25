@@ -73,12 +73,13 @@ export default function ProfileScreen() {
     const fetchProfile = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}api/users/${userId}`)
+      const res = await fetch(`${BASE_URL}api/profile/${userId}`)
       if (!res.ok) {
         throw new Error("User not found");
       }
       const data = await res.json();
       setProfile(data);
+      setBio(data.bio || "");
     } catch (err) {
       setError("Failed to load user profile.");
       console.error(err);
@@ -89,9 +90,33 @@ export default function ProfileScreen() {
     fetchProfile();
   }, [userId]);
 
-  const handleSaveBio = () => {
+  const handleSaveBio = async () => {
     // In a real app, update the backend here.
     setIsEditingBio(false);
+    if (!currentUserId) return;
+
+  try {
+    const res = await fetch(`${BASE_URL}api/profile/updateBio/${currentUserId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ bio }),
+    });
+
+    const data = await res.json();
+    
+    if (res.ok) {
+      console.log('Bio updated successfully');
+      setProfile((prev) => ({ ...prev, bio })); // Update local profile bio immediately
+      setIsEditingBio(false); // Exit edit mode
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } else {
+      console.warn('Failed to update bio:', data?.error);
+    }
+  } catch (error) {
+    console.error('Error updating bio:', error);
+  }
     // Trigger haptic feedback using Expo Haptics
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
@@ -157,9 +182,8 @@ export default function ProfileScreen() {
         accessibilityHint="Tap to view full post"
       >
         <Image 
-          source={item.image} 
+          source={{ uri: `${BASE_URL}${item.image}` }}
           style={[styles.postImage, { width: imageSize - 2, height: imageSize - 2 }]} 
-          accessibilityLabel="Post image"
         />
       </TouchableOpacity>
     );
@@ -193,8 +217,9 @@ export default function ProfileScreen() {
       {/* Profile Header */}
       <View style={styles.header}>
         <Image 
-          source={profile?.avatar} 
-          style={styles.avatar} 
+          source={{ uri: `${BASE_URL}${profile?.avatar}` }}
+          style={styles.avatar}
+          resizeMode="cover"
           accessibilityLabel="User avatar"
         />
         {profile && (
