@@ -56,20 +56,25 @@ const HomeScreen = () => {
     // fetchUserPets();
   }, [isFocused]);
 
-  const renderPetItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.petCard}
-      onPress={() => navigation.navigate("PetProfile", { petId: item.petId })}
-    >
-      <Image
-        // Ensure you have a placeholder pet image in your assets folder
-        source={require("../assets/pet.png")}
-        style={styles.petImage}
-      />
-      <Text style={styles.petName}>{item.petName}</Text>
-      <Text style={styles.petBreed}>{item.breed}</Text>
-    </TouchableOpacity>
-  );
+  const renderPetItem = ({ item }) => {
+    const avatarSource = item.avatar
+      ? { uri: `${BASE_URL}${item.avatar}` }
+      : require("../assets/pet.png");
+  
+    return (
+      <TouchableOpacity
+        style={styles.petCard}
+        onPress={() => navigation.navigate("PetProfile", { petId: item.petId })}
+      >
+        <Image
+          source={avatarSource}
+          style={styles.petImage}
+        />
+        <Text style={styles.petName}>{item.petName}</Text>
+        <Text style={styles.petBreed}>{item.breed}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <ImageBackground

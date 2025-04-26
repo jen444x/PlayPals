@@ -15,6 +15,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from "../config";
 
 const EditPet = () => {
     const route = useRoute();
@@ -43,7 +44,7 @@ const EditPet = () => {
                 setPetName(data.petName || '');
                 setPetBreed(data.breed || '');
                 setPetBirthday(data.birthday ? new Date(data.birthday) : null);
-                setPetImage(data.profileImage || null);
+                setPetImage(data.avatar || null);
             } catch (error) {
                 console.error('❌ Error fetching pet:', error);
                 Alert.alert('Error', 'Failed to load pet details.');
@@ -97,6 +98,23 @@ const EditPet = () => {
       
         const data = await response.json();
         console.log(data);
+    };
+
+    const getPetImageSource = () => {
+        if (petImage) {
+          // Check if petImage is a remote path (starts with "/images")
+          if (petImage.startsWith('images')) {
+            return { uri: `${BASE_URL}${petImage}` };
+          }
+      
+          // If it's a full URL (like from picker), use it directly
+          if (petImage.startsWith('file://') || petImage.startsWith('http')) {
+            return { uri: petImage };
+          }
+        }
+      
+        // Default placeholder if no image
+        return require('../assets/pet-placeholder.png');
     };
 
     const handleUpdatePet = async () => {
@@ -192,7 +210,7 @@ const EditPet = () => {
                 </View>
 
                 {petImage ? (
-                    <Image source={{ uri: petImage }} style={styles.image} />
+                    <Image source={getPetImageSource()} style={styles.image} />
                 ) : (
                     <Image source={require('../assets/pet-placeholder.png')} style={styles.image} />
                 )}

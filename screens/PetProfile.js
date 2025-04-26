@@ -53,10 +53,9 @@ const PetProfile = () => {
         );
     }
 
-    const imageSource =
-        petDetails.profileImage && petDetails.profileImage.startsWith('http')
-            ? { uri: petDetails.profileImage }
-            : require('../assets/pet-placeholder.png');
+    const imageSource = petDetails.avatar
+    ? { uri: `${BASE_URL}${petDetails.avatar}` }
+    : require('../assets/pet-placeholder.png');
 
             const formatLocalDate = (dateString) => {
                 const date = new Date(dateString);

@@ -61,6 +61,26 @@ const AddPet = () => {
         }
     };
 
+    const uploadImageToServer = async (userId, petId, imageFile) => {
+        const formData = new FormData();
+        formData.append('avatar', {
+          uri: imageFile.uri,
+          name: imageFile.fileName || 'avatar.jpg',
+          type: imageFile.type || 'image/jpeg',
+        });
+      
+        const response = await fetch(`${BASE_URL}api/pets/${userId}/${petId}/uploadAvatar`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          body: formData,
+        });
+      
+        const data = await response.json();
+        console.log(data);
+    };
+
     const handleAddPet = async () => {
         // Input Validation: Ensure all required fields are filled
         if (!petName.trim() || !petBreed.trim() || !petBirthday) {
@@ -86,7 +106,7 @@ const AddPet = () => {
 
             // Simulate an API call delay (replace with actual API call)
             // await new Promise((resolve) => setTimeout(resolve, 2000));
-            const response = await fetch(`https://${BASE_URL}api/pets/${userId}`, {
+            const response = await fetch(`${BASE_URL}api/pets/${userId}`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -103,6 +123,10 @@ const AddPet = () => {
                 Alert.alert('Error', data.message || 'Something went wrong.');
             } 
 
+            if (petImage && petId) {
+                await uploadImageToServer(userId, petId, petImage);
+            }
+
             // Show a success alert and navigate back after confirmation
             Alert.alert('Success', 'Pet details saved successfully!', [
                 {
@@ -112,6 +136,7 @@ const AddPet = () => {
                     },
                 },
             ]);
+
         } catch (err) {
             console.error('Error saving pet details:', err);
             setError('An error occurred while saving pet details. Please try again.');
