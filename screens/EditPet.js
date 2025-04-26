@@ -33,7 +33,7 @@ const EditPet = () => {
         const fetchPetDetails = async () => {
             try {
                 const userId = await AsyncStorage.getItem('userId');
-                const url = `https://${BASE_URL}api/pets/${userId}/${petId}`;
+                const url = `${BASE_URL}api/pets/${userId}/${petId}`;
                 const response = await fetch(url);
                 const text = await response.text();
 
@@ -79,41 +79,24 @@ const EditPet = () => {
         }
     };
 
-    const uploadImageToServer = async (localUri) => {
-        const filename = localUri.split('/').pop();
-        const match = /\.(\w+)$/.exec(filename ?? '');
-        const type = match ? `image/${match[1]}` : 'image';
-
+    const uploadImageToServer = async (userId, petId, imageFile) => {
         const formData = new FormData();
-        formData.append('image', {
-            uri: localUri,
-            name: filename,
-            type,
+        formData.append('avatar', {
+          uri: imageFile.uri,
+          name: imageFile.fileName || 'avatar.jpg',
+          type: imageFile.type || 'image/jpeg',
         });
-
-        try {
-            const response = await fetch('${BASE_URL}api/uploads', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-                body: formData,
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.log('Upload error:', errorText);
-                throw new Error('Image upload failed');
-            }
-
-            const data = await response.json();
-            const fullUrl = `https://test2.playpals-app.com${data.imageUrl}`;
-            console.log('✅ Uploaded image URL:', fullUrl);
-            return fullUrl;
-        } catch (err) {
-            console.error('❌ Image upload failed:', err);
-            throw err;
-        }
+      
+        const response = await fetch(`${BASE_URL}api/pets/${userId}/${petId}/uploadAvatar`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          body: formData,
+        });
+      
+        const data = await response.json();
+        console.log(data);
     };
 
     const handleUpdatePet = async () => {
@@ -130,7 +113,7 @@ const EditPet = () => {
 
             let imageUrl = null;
             if (petImage && petImage.startsWith('file://')) {
-                imageUrl = await uploadImageToServer(petImage);
+                imageUrl = await uploadImageToServer(userId, petId, { uri: petImage });
             } else {
                 imageUrl = petImage;
             }

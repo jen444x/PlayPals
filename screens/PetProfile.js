@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from "../config";
 
 const PetProfile = () => {
     const route = useRoute();

@@ -273,7 +273,7 @@ export default function FeedScreen() {
               keyExtractor={(item, index) => index.toString()}
               renderItem={({ item }) => (
                 <View style={styles.commentItem}>
-                  <Text style={styles.commentUsername}></Text>
+                  <Text style={styles.commentUsername}>{item.username}:</Text>
                   <Text style={styles.commentText}>{item.comment}</Text>
                 </View>
               )}
