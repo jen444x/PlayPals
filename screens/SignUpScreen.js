@@ -1,15 +1,26 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, Image,
-  Alert, Animated, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Platform
-} from 'react-native';
-import ConfettiCannon from 'react-native-confetti-cannon';
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Alert,
+  Animated,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Platform,
+} from "react-native";
+import ConfettiCannon from "react-native-confetti-cannon";
+import { BASE_URL } from "../config.js";
 
 export default function SignUpScreen({ navigation }) {
-  const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
 
   const logoAnim = useRef(new Animated.Value(0)).current;
@@ -38,8 +49,8 @@ export default function SignUpScreen({ navigation }) {
 
     try {
       const response = await fetch(`${BASE_URL}api/auth/registerUser`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, username, password }),
       });
 
@@ -55,7 +66,7 @@ export default function SignUpScreen({ navigation }) {
             duration: 1200,
             useNativeDriver: true,
           }).start(() => {
-            navigation.navigate('Login');
+            navigation.navigate("Login");
           });
         }, 1200);
       } else {
@@ -68,11 +79,14 @@ export default function SignUpScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.container}>
           <Animated.Image
-            source={require('../assets/pet_logo.png')}
+            source={require("../assets/pet_logo.png")}
             style={[
               styles.logo,
               {
@@ -80,12 +94,12 @@ export default function SignUpScreen({ navigation }) {
                   {
                     scale: logoAnim.interpolate({
                       inputRange: [0, 1],
-                      outputRange: [0.5, 1]
-                    })
-                  }
+                      outputRange: [0.5, 1],
+                    }),
+                  },
                 ],
-                opacity: logoAnim
-              }
+                opacity: logoAnim,
+              },
             ]}
           />
 
@@ -140,13 +154,17 @@ export default function SignUpScreen({ navigation }) {
             }}
             onPress={handleSignUp}
           >
-            <Animated.View style={[styles.button, { transform: [{ scale: buttonScale }] }]}>
+            <Animated.View
+              style={[styles.button, { transform: [{ scale: buttonScale }] }]}
+            >
               <Text style={styles.buttonText}>Sign Up</Text>
             </Animated.View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.linkText}>Already have an account? Login 🐾</Text>
+          <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+            <Text style={styles.linkText}>
+              Already have an account? Login 🐾
+            </Text>
           </TouchableOpacity>
 
           {showConfetti && (
@@ -169,32 +187,55 @@ export default function SignUpScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: '#FCEECF', padding: 20
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FCEECF",
+    padding: 20,
   },
   logo: {
-    width: 200, height: 200, marginBottom: 20, resizeMode: 'contain'
+    width: 200,
+    height: 200,
+    marginBottom: 20,
+    resizeMode: "contain",
   },
   title: {
-    fontSize: 26, fontWeight: 'bold', color: '#5A3E36', marginBottom: 20
+    fontSize: 26,
+    fontWeight: "bold",
+    color: "#5A3E36",
+    marginBottom: 20,
   },
   input: {
-    width: '80%', padding: 12, borderWidth: 2, borderColor: '#E07A5F',
-    backgroundColor: '#FFF5E4', marginBottom: 10, borderRadius: 25, textAlign: 'center'
+    width: "80%",
+    padding: 12,
+    borderWidth: 2,
+    borderColor: "#E07A5F",
+    backgroundColor: "#FFF5E4",
+    marginBottom: 10,
+    borderRadius: 25,
+    textAlign: "center",
   },
   button: {
-    backgroundColor: '#E07A5F', padding: 12, width: '80%',
-    alignItems: 'center', borderRadius: 25, marginTop: 10
+    backgroundColor: "#E07A5F",
+    padding: 12,
+    width: "80%",
+    alignItems: "center",
+    borderRadius: 25,
+    marginTop: 10,
   },
   buttonText: {
-    color: 'white', fontSize: 18, fontWeight: 'bold'
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
   },
   linkText: {
-    marginTop: 15, color: '#D1495B', fontSize: 16
+    marginTop: 15,
+    color: "#D1495B",
+    fontSize: 16,
   },
   fadeOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#FCEECF',
+    backgroundColor: "#FCEECF",
     zIndex: 10,
-  }
+  },
 });
