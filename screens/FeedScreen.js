@@ -6,12 +6,17 @@ import {
   Image, 
   Text, 
   Dimensions, 
-  TouchableOpacity 
+  TouchableOpacity,
+  Modal, 
+  TextInput, 
+  KeyboardAvoidingView,
+  Platform 
 } from 'react-native';
 import { Video } from 'expo-av';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../config.js'; // Adjust path as needed
+import exitIcon from '../assets/reject.png';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
@@ -43,6 +48,12 @@ export default function FeedScreen() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [likedPosts, setLikedPosts] = useState(new Set());
   const [disabledLikes, setDisabledLikes] = useState(new Set());
+  
+  
+  const [commentModalVisible, setCommentModalVisible] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
 
 
   const fetchFeed = async () => {
@@ -154,9 +165,46 @@ export default function FeedScreen() {
             {item.likedByUser ? '💔 Unlike' : '❤️ Like'}
           </Text>
         </TouchableOpacity>
+
+          
+        <TouchableOpacity 
+        style={styles.commentButton}
+        onPress={() => openComments(item.id)}
+        >
+        <Text style={styles.commentButtonText}>💬 Comment</Text>
+        </TouchableOpacity>  
+
       </View>
     </View>
   );
+
+  const openComments = (postId) => {
+    setSelectedPostId(postId);
+    setCommentModalVisible(true);
+    // Dummy comments
+    setComments([
+      { username: 'John', text: 'Nice post!' },
+      { username: 'Pam', text: 'Love this!' }
+    ]);
+  };
+  
+  const postComment = () => {
+    if (newComment.trim() === '') return;
+  
+    const newCommentObject = {
+      username: 'You', // Just show "You" for now later replace with actual username
+      text: newComment,
+    };
+  
+    setComments(prevComments => [newCommentObject, ...prevComments]);
+    setNewComment('');
+  };
+  
+  const closeComments = () => {
+    setCommentModalVisible(false);
+    setSelectedPostId(null);
+    setComments([]);
+  };
 
   return (
     <View style={styles.container}>
@@ -171,6 +219,57 @@ export default function FeedScreen() {
         onViewableItemsChanged={onViewRef.current}
         viewabilityConfig={viewConfigRef.current}
       />
+      
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={commentModalVisible}
+        onRequestClose={closeComments}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContainer}>
+          {/* Top Bar */}
+          <View style={styles.topBar}>
+            <Text style={{ width: 40 }}> </Text> 
+            <Text style={styles.modalTitle}>Comments</Text>            
+            <TouchableOpacity onPress={closeComments} style={styles.closeButtonContainer}>
+              <Image 
+                source={exitIcon} 
+                style={styles.exitIcon} 
+              />
+            </TouchableOpacity>
+          </View>
+
+            <FlatList 
+              data={comments}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.commentItem}>
+                  <Text style={styles.commentUsername}>{item.username}:</Text>
+                  <Text style={styles.commentText}>{item.text}</Text>
+                </View>
+              )}
+            />
+            <KeyboardAvoidingView
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              keyboardVerticalOffset={100}
+            >
+              <View style={styles.commentInputContainer}>
+                <TextInput 
+                  style={styles.commentInput}
+                  placeholder="Add a comment..."
+                  placeholderTextColor="#999"
+                  value={newComment}
+                  onChangeText={setNewComment}
+                />
+                <TouchableOpacity onPress={postComment} style={styles.postCommentButton}>
+                  <Text style={styles.postCommentButtonText}>Post</Text>
+                </TouchableOpacity>
+              </View>
+            </KeyboardAvoidingView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -222,4 +321,98 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+
+
+
+
+  commentButton: {
+    marginTop: 10,
+    backgroundColor: '#64B5F6',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+  },
+  commentButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    height: '70%',
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    overflow: "hidden",
+  },
+  commentItem: {
+    marginBottom: 10,
+  },
+  commentUsername: {
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  commentText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  commentInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  commentInput: {
+    flex: 1,
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    backgroundColor: '#f9f9f9',
+  },
+  postCommentButton: {
+    marginLeft: 10,
+    backgroundColor: '#007AFF',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+  },
+  postCommentButtonText: {
+    color: '#FFF',
+    fontWeight: '600',
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFF',
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    marginBottom: 15,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  closeButtonContainer: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  exitIcon: {
+    width: 20,
+    height: 20,
+    tintColor: '#333',
+  },
+
 });
