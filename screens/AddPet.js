@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from '../config.js';
 
 const AddPet = () => {
     const navigation = useNavigation();
@@ -85,7 +86,7 @@ const AddPet = () => {
 
             // Simulate an API call delay (replace with actual API call)
             // await new Promise((resolve) => setTimeout(resolve, 2000));
-            const response = await fetch(`https://test2.playpals-app.com/api/pets/${userId}`, {
+            const response = await fetch(`https://${BASE_URL}api/pets/${userId}`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',

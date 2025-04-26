@@ -88,11 +88,11 @@ const UserProfile = () => {
       const userId = await AsyncStorage.getItem('userId');
 
       // Fetch user info
-      const res = await fetch(`https://test2.playpals-app.com/api/users/${userId}`);
+      const res = await fetch(`${BASE_URL}api/users/${userId}`);
       const userData = await res.json();
 
       // Fetch pets
-      const petsRes = await fetch(`https://test2.playpals-app.com/api/pets/${userId}`);
+      const petsRes = await fetch(`${BASE_URL}api/pets/${userId}`);
       const petData = await petsRes.json();
 
       // Save both in state
@@ -149,7 +149,7 @@ const UserProfile = () => {
         breed: "Unknown",
       };
   
-      const response = await fetch(`https://test2.playpals-app.com/api/pets/${userId}`, {
+      const response = await fetch(`${BASE_URL}api/pets/${userId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newPet),
@@ -172,7 +172,7 @@ const UserProfile = () => {
   const removePetProfile = async (petId) => {
     try {
       const userId = await AsyncStorage.getItem('userId');
-      const res = await fetch(`https://test2.playpals-app.com/api/pets/${userId}/${petId}`, {
+      const res = await fetch(`${BASE_URL}api/pets/${userId}/${petId}`, {
         method: 'DELETE',
       });
   
@@ -203,7 +203,7 @@ const UserProfile = () => {
         petName: newName,
       };
   
-      const url = `https://test2.playpals-app.com/api/pets/${userId}/${petId}`;
+      const url = `${BASE_URL}api/pets/${userId}/${petId}`;
       const response = await fetch(url, {
         method: 'PUT',
         headers: {
@@ -278,7 +278,7 @@ const UserProfile = () => {
         state,
       };
   
-      const res = await fetch(`https://test2.playpals-app.com/api/users/${userId}`, {
+      const res = await fetch(`${BASE_URL}api/users/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

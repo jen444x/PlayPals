@@ -37,7 +37,7 @@ export default function SignUpScreen({ navigation }) {
     }
 
     try {
-      const response = await fetch('https://test2.playpals-app.com/api/auth/registerUser', {
+      const response = await fetch(`${BASE_URL}api/auth/registerUser`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, username, password }),

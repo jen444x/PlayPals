@@ -31,7 +31,7 @@ const HomeScreen = () => {
         const userId = await AsyncStorage.getItem("userId"); // or pass it as a prop
         console.log("Home UserID", userId);
         const response = await fetch(
-          `https://test2.playpals-app.com/api/pets/${userId}`
+          `${BASE_URL}api/pets/${userId}`
         );
 
         if (!response.ok) {

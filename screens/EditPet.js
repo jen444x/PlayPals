@@ -33,7 +33,7 @@ const EditPet = () => {
         const fetchPetDetails = async () => {
             try {
                 const userId = await AsyncStorage.getItem('userId');
-                const url = `https://test2.playpals-app.com/api/pets/${userId}/${petId}`;
+                const url = `https://${BASE_URL}api/pets/${userId}/${petId}`;
                 const response = await fetch(url);
                 const text = await response.text();
 
@@ -92,7 +92,7 @@ const EditPet = () => {
         });
 
         try {
-            const response = await fetch('https://test2.playpals-app.com/api/uploads', {
+            const response = await fetch('${BASE_URL}api/uploads', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -142,7 +142,7 @@ const EditPet = () => {
                 profileImage: imageUrl,
             };
 
-            const url = `https://test2.playpals-app.com/api/pets/${userId}/${petId}`;
+            const url = `${BASE_URL}api/pets/${userId}/${petId}`;
             const response = await fetch(url, {
                 method: 'PUT',
                 headers: {

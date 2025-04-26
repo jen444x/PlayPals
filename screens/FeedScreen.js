@@ -178,26 +178,54 @@ export default function FeedScreen() {
     </View>
   );
 
-  const openComments = (postId) => {
+  const openComments = async (postId) => {
     setSelectedPostId(postId);
     setCommentModalVisible(true);
     // Dummy comments
-    setComments([
-      { username: 'John', text: 'Nice post!' },
-      { username: 'Pam', text: 'Love this!' }
-    ]);
+    try {
+      const response = await fetch(`${BASE_URL}api/posts/getComments/${postId}`);
+      const data = await response.json();
+      setComments(data);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      setComments([]);
+    }
   };
   
-  const postComment = () => {
+  const postComment = async () => {
     if (newComment.trim() === '') return;
   
-    const newCommentObject = {
-      username: 'You', // Just show "You" for now later replace with actual username
-      text: newComment,
-    };
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      const username = await AsyncStorage.getItem('username');
+      const response = await fetch(`${BASE_URL}api/posts/addComment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          postId: selectedPostId,
+          userId,
+          comment: newComment,
+        }),
+      });
   
-    setComments(prevComments => [newCommentObject, ...prevComments]);
-    setNewComment('');
+      const data = await response.json();
+  
+      if (response.ok) {
+        const formattedComment = {
+          username: username || "You",
+          comment: data.comment,
+        };
+
+        setComments((prev) => [formattedComment, ...prev]);
+        setNewComment('');
+      } else {
+        console.warn('Failed to post comment:', data?.error);
+      }
+    } catch (error) {
+      console.error('Error posting comment:', error);
+    }
   };
   
   const closeComments = () => {
@@ -245,8 +273,8 @@ export default function FeedScreen() {
               keyExtractor={(item, index) => index.toString()}
               renderItem={({ item }) => (
                 <View style={styles.commentItem}>
-                  <Text style={styles.commentUsername}>{item.username}:</Text>
-                  <Text style={styles.commentText}>{item.text}</Text>
+                  <Text style={styles.commentUsername}></Text>
+                  <Text style={styles.commentText}>{item.comment}</Text>
                 </View>
               )}
             />

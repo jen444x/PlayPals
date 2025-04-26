@@ -27,7 +27,7 @@ const PetProfile = () => {
                     console.log("🔍 userId:", userId);
                     console.log("🐾 petId:", petId);
 
-                    const response = await fetch(`https://test2.playpals-app.com/api/pets/${userId}/${petId}`);
+                    const response = await fetch(`${BASE_URL}api/pets/${userId}/${petId}`);
                     if (!response.ok) throw new Error('Failed to fetch pet');
 
                     const data = await response.json();
