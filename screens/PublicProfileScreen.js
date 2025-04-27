@@ -293,15 +293,25 @@ export default function ProfileScreen() {
         {/* Action Buttons */}
         { !isCurrentUserProfile ? (
           <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity 
-              style={[styles.followButton, { backgroundColor: isFollowing ? '##ABADAA':'#fe2c55' }]}
-              onPress={handleFollow}
-              accessibilityLabel="Follow Button"
-              accessibilityHint="Tap to follow this user"
+           <TouchableOpacity
+            onPress={isFollowing ? null : handleFollow}
+            disabled={isFollowing}
+            accessibilityLabel="Follow Button"
+            accessibilityHint={
+              isFollowing
+                ? "You are already following this user"
+                : "Tap to follow this user"
+            }
+            style={[
+              styles.followButton,
+              isFollowing
+                ? styles.followingButton   // grey when following
+                : { backgroundColor: '#fe2c55' } // red when not following
+            ]}
             >
-              <Text style={styles.followButtonText}>
-                {isFollowing ? 'Unfollow' : 'Follow'}
-              </Text>
+            <Text style={styles.followButtonText}>
+              {isFollowing ? 'Following' : 'Follow'}
+            </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.messageButton, { backgroundColor: '#2196F3' }]}
