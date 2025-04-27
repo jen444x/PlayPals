@@ -51,7 +51,7 @@ export default function PetProfilesScreen() {
       }
 
       const data = await response.json();
-      console.log('🐾 Pets fetched:', data);
+      console.log('Pets fetched:', data);
       setPetProfiles(data);
 
     } catch (error) {
@@ -99,7 +99,7 @@ export default function PetProfilesScreen() {
           styles.petName,
           { color: isDarkMode ? '#FFDEAD' : '#8B4513' }
         ]}>
-          {item.name}
+          {item.petName}
         </Text>
         <Text style={[
           styles.petBio,
@@ -143,7 +143,7 @@ export default function PetProfilesScreen() {
 
         <FlatList
           data={petProfiles}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) => (item.id ? item.id.toString() : index.toString())}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
