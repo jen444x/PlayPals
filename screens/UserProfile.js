@@ -127,7 +127,7 @@ const UserProfile = () => {
     }
   };
 
-  // what happens when you click save profile
+  // what happens when you click 'save profile'
   const handleSaveProfile = async (values, resetForm) => {
     setIsLoading(true);
     try {
@@ -175,6 +175,76 @@ const UserProfile = () => {
     }
   };
 
+  // what happens when you click 'done editing pets'
+  const handleSavePetProfiles = async () => {
+    setIsLoading(true);
+    try {
+      const userId = await AsyncStorage.getItem("userId");
+
+      for (const pet of petProfiles) {
+        const editedName = petNameEdits[pet.petId] ?? pet.petName;
+        const editedBreed = petBreedEdits[pet.petId] ?? pet.breed;
+
+        if (editedName !== pet.petName || editedBreed !== pet.breed) {
+          const payload = {
+            petName: editedName,
+            breed: editedBreed,
+          };
+
+          const url = `${BASE_URL}api/pets/${userId}/${pet.petId}`;
+          const response = await fetch(url, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          // if (!response.ok) {
+          //   const errorText = await response.text();
+          //   throw new Error(errorText || "Failed to update pet.");
+          // }
+
+          const responseJson = await response.json();
+          console.log("🔍 Pet update response:", responseJson);
+
+          if (!response.ok) {
+            if (
+              responseJson.message ===
+              "You already have another pet with this name."
+            ) {
+              showToast(
+                "Duplicate pet name detected. Please use a unique name for each pet."
+              );
+            } else {
+              showToast(responseJson.message || "Failed to update pet.");
+            }
+            // DO NOT throw, just return early to stop processing more
+            return;
+          }
+        }
+      }
+
+      // After saving all, update local state
+      setPetProfiles((prevPets) =>
+        prevPets.map((pet) => ({
+          ...pet,
+          petName: petNameEdits[pet.petId] ?? pet.petName,
+          breed: petBreedEdits[pet.petId] ?? pet.breed,
+        }))
+      );
+
+      setPetNameEdits({});
+      setPetBreedEdits({});
+      setIsEditingPets(false);
+
+      showToast("All pet changes saved!");
+    } catch (error) {
+      console.error("Save pets error:", error);
+      showToast("Failed to save pet changes");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const addPetProfile = async () => {
     try {
       const userId = await AsyncStorage.getItem("userId");
@@ -205,6 +275,7 @@ const UserProfile = () => {
     }
   };
 
+  // remove pet
   const removePetProfile = async (petId) => {
     try {
       const userId = await AsyncStorage.getItem("userId");
@@ -230,6 +301,7 @@ const UserProfile = () => {
     }
   };
 
+  // update pet
   const updatePetInfo = async (petId, newName, newBreed) => {
     if (!newName.trim()) {
       showToast("Please enter a valid pet name.");
@@ -418,16 +490,16 @@ const UserProfile = () => {
                                     [pet.petId]: text,
                                   }))
                                 }
-                                onBlur={() => {
-                                  const newName = petNameEdits[pet.petId];
-                                  if (newName && newName !== pet.petName) {
-                                    updatePetInfo(
-                                      pet.petId,
-                                      newName,
-                                      pet.breed
-                                    );
-                                  }
-                                }}
+                                // onBlur={() => {
+                                //   const newName = petNameEdits[pet.petId];
+                                //   if (newName && newName !== pet.petName) {
+                                //     updatePetInfo(
+                                //       pet.petId,
+                                //       newName,
+                                //       pet.breed
+                                //     );
+                                //   }
+                                // }}
                                 placeholder="Pet Name"
                                 placeholderTextColor={
                                   isDarkMode ? "#aaa" : "#5D4037"
@@ -449,16 +521,16 @@ const UserProfile = () => {
                                     [pet.petId]: text,
                                   }))
                                 }
-                                onBlur={() => {
-                                  const newBreed = petBreedEdits[pet.petId];
-                                  if (newBreed && newBreed !== pet.breed) {
-                                    updatePetInfo(
-                                      pet.petId,
-                                      pet.petName,
-                                      newBreed
-                                    );
-                                  }
-                                }}
+                                // onBlur={() => {
+                                //   const newBreed = petBreedEdits[pet.petId];
+                                //   if (newBreed && newBreed !== pet.breed) {
+                                //     updatePetInfo(
+                                //       pet.petId,
+                                //       pet.petName,
+                                //       newBreed
+                                //     );
+                                //   }
+                                // }}
                                 placeholder="Pet Breed"
                                 placeholderTextColor={
                                   isDarkMode ? "#aaa" : "#5D4037"
@@ -500,11 +572,21 @@ const UserProfile = () => {
                 {/* Edit Pets Button */}
                 <TouchableOpacity
                   style={styles.editButton}
+                  // onPress={() => {
+                  //   LayoutAnimation.configureNext(
+                  //     LayoutAnimation.Presets.easeInEaseOut
+                  //   );
+                  //   setIsEditingPets((prev) => !prev);
+                  // }}
                   onPress={() => {
                     LayoutAnimation.configureNext(
                       LayoutAnimation.Presets.easeInEaseOut
                     );
-                    setIsEditingPets((prev) => !prev);
+                    if (isEditingPets) {
+                      handleSavePetProfiles(); // Save edits when finishing
+                    } else {
+                      setIsEditingPets(true); // Start editing
+                    }
                   }}
                 >
                   <Text style={styles.editButtonText}>
