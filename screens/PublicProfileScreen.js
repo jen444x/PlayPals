@@ -152,7 +152,7 @@ export default function ProfileScreen() {
 
   const handleFollow = async () => {
     if (!currentUserId || !profile?.id) return;
-
+  
     try {
       const url = isFollowing
         ? `${BASE_URL}api/users/unfollowUser`
@@ -168,16 +168,18 @@ export default function ProfileScreen() {
       });
 
       const data = await res.json();
+  
       if (res.ok) {
         console.log(isFollowing ? "Unfollow successful!" : "Follow successful!");
         setIsFollowing(!isFollowing);
       } else {
-        console.warn('Failed to follow:', data?.error)
+        console.warn('Failed to follow:', data?.error);
       }
     } catch (err) {
-      console.error("Follow requst failed:", err)
+      console.error("Follow request failed:", err);
     }
   };
+  
 
   // Inline memoized component for a post item
   const PostItem = React.memo(({ item, imageSize }) => {
@@ -438,6 +440,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  followingButton: {
+    backgroundColor: '#AAA',   // Grey color for "Following" button
+  },
+  
   messageButton: {
     paddingVertical: 8,
     paddingHorizontal: 30,

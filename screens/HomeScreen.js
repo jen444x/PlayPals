@@ -19,20 +19,10 @@ const HomeScreen = () => {
 
   useEffect(() => {
     const fetchUserPets = async () => {
-      // Replace this simulated data with your actual API call or data fetching logics
-      /*
-            const userPets = [
-                { id: '1', name: 'Buddy', breed: 'Golden Retriever' },
-                { id: '2', name: 'Max', breed: 'Bulldog' },
-            ];
-            */
       try {
-        console.log("Hello");
         const userId = await AsyncStorage.getItem("userId"); // or pass it as a prop
         console.log("Home UserID", userId);
-        const response = await fetch(
-          `${BASE_URL}api/pets/${userId}`
-        );
+        const response = await fetch(`${BASE_URL}api/pets/${userId}`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch pets");
@@ -60,16 +50,13 @@ const HomeScreen = () => {
     const avatarSource = item.avatar
       ? { uri: `${BASE_URL}${item.avatar}` }
       : require("../assets/pet.png");
-  
+
     return (
       <TouchableOpacity
         style={styles.petCard}
         onPress={() => navigation.navigate("PetProfile", { petId: item.petId })}
       >
-        <Image
-          source={avatarSource}
-          style={styles.petImage}
-        />
+        <Image source={avatarSource} style={styles.petImage} />
         <Text style={styles.petName}>{item.petName}</Text>
         <Text style={styles.petBreed}>{item.breed}</Text>
       </TouchableOpacity>

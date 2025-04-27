@@ -18,14 +18,13 @@ import {
   UIManager,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useIsFocused } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { Formik } from "formik";
 import * as Yup from "yup";
-import { ThemeContext } from "../ThemeContext"; // Adjust the path as needed
+import { ThemeContext } from "../ThemeContext"; // adjust path
 import { BASE_URL } from "../config.js";
 
-// Enable LayoutAnimation on Android
 if (
   Platform.OS === "android" &&
   UIManager.setLayoutAnimationEnabledExperimental
@@ -34,46 +33,36 @@ if (
 }
 
 const ProfileSchema = Yup.object().shape({
-  // name: Yup.string().required("Name is required"),
   username: Yup.string().required("Username is required"),
   email: Yup.string().email("Invalid email").required("Email is required"),
-  // password: Yup.string().min(4, "Too Short!").required("Password is required"),
 });
 
 const UserProfile = () => {
   const navigation = useNavigation();
-  const { isDarkMode } = useContext(ThemeContext); // Use the ThemeContext here
+  const { isDarkMode } = useContext(ThemeContext);
+  const isFocused = useIsFocused();
 
-  // Original profile holds the saved state.
   const [originalProfile, setOriginalProfile] = useState({
-    // name: "",
     username: "",
     email: "",
-    // password: "",
     profileImage: null,
     petProfiles: [],
   });
 
-  // Local state for profile image and pet profiles (managed outside of Formik)
-  const [profileImage, setProfileImage] = useState(
-    originalProfile.profileImage
-  );
+  const [profileImage, setProfileImage] = useState(null);
   const [petProfiles, setPetProfiles] = useState([]);
   const [petNameEdits, setPetNameEdits] = useState({});
-
-  // Editing and loading state
-  const [isEditing, setIsEditing] = useState(false);
+  const [petBreedEdits, setPetBreedEdits] = useState({});
+  const [isEditingPets, setIsEditingPets] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Dynamic styling based on ThemeContext (pet-themed colors)
   const dynamicContainerStyle = {
-    backgroundColor: isDarkMode ? "#252526" : "#FFF3E0", // Dark brown vs. light orange cream
+    backgroundColor: isDarkMode ? "#252526" : "#FFF3E0",
   };
   const dynamicTextStyle = {
-    color: isDarkMode ? "#0BA385" : "#5D4037", // Light peach vs. dark brown
+    color: isDarkMode ? "#0BA385" : "#5D4037",
   };
 
-  // Helper for toast notifications
   const showToast = (message) => {
     if (Platform.OS === "android") {
       ToastAndroid.show(message, ToastAndroid.SHORT);
@@ -81,21 +70,20 @@ const UserProfile = () => {
       Alert.alert("", message);
     }
   };
-  // Fetch user profile from backend
+
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
         const userId = await AsyncStorage.getItem("userId");
 
-        // Fetch user info
+        // fetch user data
         const res = await fetch(`${BASE_URL}api/users/${userId}`);
         const userData = await res.json();
 
-        // Fetch pets
+        // fetch pet data
         const petsRes = await fetch(`${BASE_URL}api/pets/${userId}`);
         const petData = await petsRes.json();
 
-        // Save both in state
         setOriginalProfile({ ...userData, petProfiles: petData });
         setProfileImage(userData.profileImage);
         setPetProfiles(petData);
@@ -104,10 +92,14 @@ const UserProfile = () => {
       }
     };
 
-    fetchUserProfile();
-  }, []);
+    // Only run fetch if the screen is active
+    if (isFocused) {
+      fetchUserProfile();
+    }
 
-  // Pick profile image with loading indicator and error handling
+    // fetchUserProfile();
+  }, [isFocused]);
+
   const pickImage = async () => {
     try {
       const permissionResult =
@@ -135,14 +127,127 @@ const UserProfile = () => {
     }
   };
 
-  // Pet Profiles Management
+  // what happens when you click 'save profile'
+  const handleSaveProfile = async (values, resetForm) => {
+    setIsLoading(true);
+    try {
+      const userId = await AsyncStorage.getItem("userId");
+
+      const payload = {
+        email: values.email,
+        username: values.username,
+      };
+
+      const res = await fetch(`${BASE_URL}api/users/${userId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      // const resText = await res.text();
+      const resJson = await res.json();
+      console.log("🔍 Server response:", resJson);
+
+      // if (!res.ok) throw new Error(resText || "Update failed");
+      if (!res.ok) {
+        if (resJson.message === "Email and username are already in use.") {
+          showToast("Both the email and username are already taken!");
+        } else if (resJson.message === "Email is already in use.") {
+          showToast("That email is already taken!");
+        } else if (resJson.message === "Username is already in use.") {
+          showToast("That username is already taken!");
+        } else {
+          showToast(resJson.message || "Update failed");
+        }
+        // DO NOT throw error here! (stop crashing the app)
+        return;
+      }
+
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setOriginalProfile({ ...values, profileImage, petProfiles });
+      resetForm({ values });
+      showToast("Profile updated!");
+    } catch (e) {
+      console.error("Save error:", e);
+      showToast("Save failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // what happens when you click 'done editing pets'
+  const handleSavePetProfiles = async () => {
+    setIsLoading(true);
+    try {
+      const userId = await AsyncStorage.getItem("userId");
+
+      for (const pet of petProfiles) {
+        const editedName = petNameEdits[pet.petId] ?? pet.petName;
+        const editedBreed = petBreedEdits[pet.petId] ?? pet.breed;
+
+        if (editedName !== pet.petName || editedBreed !== pet.breed) {
+          const payload = {
+            petName: editedName,
+            breed: editedBreed,
+          };
+
+          const url = `${BASE_URL}api/pets/${userId}/${pet.petId}`;
+          const response = await fetch(url, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          // if (!response.ok) {
+          //   const errorText = await response.text();
+          //   throw new Error(errorText || "Failed to update pet.");
+          // }
+
+          const responseJson = await response.json();
+          console.log("🔍 Pet update response:", responseJson);
+
+          if (!response.ok) {
+            if (
+              responseJson.message ===
+              "You already have another pet with this name."
+            ) {
+              showToast(
+                "Duplicate pet name detected. Please use a unique name for each pet."
+              );
+            } else {
+              showToast(responseJson.message || "Failed to update pet.");
+            }
+            // DO NOT throw, just return early to stop processing more
+            return;
+          }
+        }
+      }
+
+      // After saving all, update local state
+      setPetProfiles((prevPets) =>
+        prevPets.map((pet) => ({
+          ...pet,
+          petName: petNameEdits[pet.petId] ?? pet.petName,
+          breed: petBreedEdits[pet.petId] ?? pet.breed,
+        }))
+      );
+
+      setPetNameEdits({});
+      setPetBreedEdits({});
+      setIsEditingPets(false);
+
+      showToast("All pet changes saved!");
+    } catch (error) {
+      console.error("Save pets error:", error);
+      showToast("Failed to save pet changes");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const addPetProfile = async () => {
     try {
       const userId = await AsyncStorage.getItem("userId");
-      if (!userId) {
-        showToast("User ID not found.");
-        return;
-      }
 
       const newPet = {
         name: "New Pet",
@@ -161,6 +266,8 @@ const UserProfile = () => {
 
       const savedPet = await response.json();
       setPetProfiles([...petProfiles, savedPet]);
+      setPetNameEdits({});
+      setPetBreedEdits({});
       showToast("Pet profile added successfully!");
     } catch (error) {
       console.error("Add pet failed:", error);
@@ -168,9 +275,11 @@ const UserProfile = () => {
     }
   };
 
+  // remove pet
   const removePetProfile = async (petId) => {
     try {
       const userId = await AsyncStorage.getItem("userId");
+
       const res = await fetch(`${BASE_URL}api/pets/${userId}/${petId}`, {
         method: "DELETE",
       });
@@ -183,6 +292,8 @@ const UserProfile = () => {
       setPetProfiles((prevPets) =>
         prevPets.filter((pet) => pet.petId !== petId)
       );
+      setPetNameEdits({});
+      setPetBreedEdits({});
       showToast("Pet profile removed");
     } catch (error) {
       console.error("❌ Delete pet failed:", error);
@@ -190,7 +301,8 @@ const UserProfile = () => {
     }
   };
 
-  const updatePetName = async (petId, newName) => {
+  // update pet
+  const updatePetInfo = async (petId, newName, newBreed) => {
     if (!newName.trim()) {
       showToast("Please enter a valid pet name.");
       return;
@@ -202,6 +314,7 @@ const UserProfile = () => {
 
       const payload = {
         petName: newName,
+        breed: newBreed,
       };
 
       const url = `${BASE_URL}api/pets/${userId}/${petId}`;
@@ -217,14 +330,15 @@ const UserProfile = () => {
       if (!response.ok)
         throw new Error(responseText || "Failed to update pet.");
 
-      // Update local state
       setPetProfiles((prevPets) =>
         prevPets.map((pet) =>
-          pet.petId === petId ? { ...pet, petName: newName } : pet
+          pet.petId === petId
+            ? { ...pet, petName: newName, breed: newBreed }
+            : pet
         )
       );
 
-      showToast("Pet name updated!");
+      showToast("Pet info updated!");
     } catch (err) {
       console.error("Error updating pet:", err);
       showToast("An error occurred while updating pet name.");
@@ -233,80 +347,23 @@ const UserProfile = () => {
     }
   };
 
-  // Handle saving profile (simulate API call with timeout)
-  const handleSaveProfile = async (values, resetForm) => {
-    setIsLoading(true);
-    try {
-      const userId = await AsyncStorage.getItem("userId");
-
-      const payload = {
-        email: values.email,
-        username: values.username,
-        // password: values.password,
-        // city,
-        // state,
-      };
-
-      const res = await fetch(`${BASE_URL}api/users/${userId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const resText = await res.text();
-      console.log("🔍 Server response:", resText);
-
-      if (!res.ok) throw new Error(resText || "Update failed");
-
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setOriginalProfile({ ...values, profileImage, petProfiles });
-      resetForm({ values });
-      setIsEditing(false);
-      showToast("Profile updated");
-    } catch (e) {
-      console.error("Save error:", e);
-      showToast("Save failed");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle canceling editing and reverting changes
-  const handleCancelEditing = (resetForm) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    resetForm({
-      values: {
-        // name: originalProfile.name,
-        username: originalProfile.username,
-        email: originalProfile.email,
-        // password: originalProfile.password,
-      },
-    });
-    setProfileImage(originalProfile.profileImage);
-    setPetProfiles(originalProfile.petProfiles);
-    setIsEditing(false);
-    showToast("Edit cancelled");
-  };
-
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0} // adjust offset for iOS if needed
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView
           contentContainerStyle={[styles.container, dynamicContainerStyle]}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={[styles.title, dynamicTextStyle]}>My Pet Profile</Text>
+          <Text style={[styles.title, dynamicTextStyle]}>My Pet Profiles</Text>
+
           <Formik
             enableReinitialize
             initialValues={{
-              // name: originalProfile.name,
               username: originalProfile.username,
               email: originalProfile.email,
-              // password: originalProfile.password,
             }}
             validationSchema={ProfileSchema}
             onSubmit={(values, { resetForm }) =>
@@ -320,16 +377,11 @@ const UserProfile = () => {
               values,
               errors,
               touched,
-              setFieldValue,
-              resetForm,
+              dirty,
             }) => (
               <>
                 {/* Profile Image */}
-                <TouchableOpacity
-                  onPress={isEditing ? pickImage : null}
-                  disabled={!isEditing || isLoading}
-                  accessibilityLabel="Profile Image"
-                >
+                <TouchableOpacity onPress={pickImage} disabled={isLoading}>
                   {isLoading ? (
                     <ActivityIndicator
                       size="large"
@@ -348,27 +400,7 @@ const UserProfile = () => {
                   )}
                 </TouchableOpacity>
 
-                {/* Profile Fields */}
-                {/* <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      color: dynamicTextStyle.color,
-                      borderColor: dynamicTextStyle.color,
-                    },
-                  ]}
-                  placeholder="Your Name"
-                  placeholderTextColor={isDarkMode ? "#ccc" : "#5D4037"}
-                  onChangeText={handleChange("name")}
-                  onBlur={handleBlur("name")}
-                  value={values.name}
-                  // editable={isEditing}
-                  accessibilityLabel="Name Input"
-                />
-                {errors.name && touched.name && (
-                  <Text style={styles.errorText}>{errors.name}</Text>
-                )} */}
-
+                {/* Username and Email */}
                 <TextInput
                   style={[
                     styles.input,
@@ -378,12 +410,11 @@ const UserProfile = () => {
                     },
                   ]}
                   placeholder="Your Username"
-                  placeholderTextColor={isDarkMode ? "#ccc" : "#5D4037"}
+                  placeholderTextColor={isDarkMode ? "#aaa" : "#5D4037"}
                   onChangeText={handleChange("username")}
                   onBlur={handleBlur("username")}
                   value={values.username}
-                  // editable={isEditing}
-                  accessibilityLabel="Username Input"
+                  editable={true}
                 />
                 {errors.username && touched.username && (
                   <Text style={styles.errorText}>{errors.username}</Text>
@@ -398,44 +429,33 @@ const UserProfile = () => {
                     },
                   ]}
                   placeholder="Your Email"
-                  placeholderTextColor={isDarkMode ? "#ccc" : "#5D4037"}
+                  placeholderTextColor={isDarkMode ? "#aaa" : "#5D4037"}
                   onChangeText={handleChange("email")}
                   onBlur={handleBlur("email")}
                   value={values.email}
                   keyboardType="email-address"
-                  // editable={isEditing}
-                  accessibilityLabel="Email Input"
+                  editable={true}
                 />
                 {errors.email && touched.email && (
                   <Text style={styles.errorText}>{errors.email}</Text>
                 )}
 
-                {/* <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      color: dynamicTextStyle.color,
-                      borderColor: dynamicTextStyle.color,
-                    },
-                  ]}
-                  placeholder="Your Password"
-                  placeholderTextColor={isDarkMode ? "#ccc" : "#5D4037"}
-                  onChangeText={handleChange("password")}
-                  onBlur={handleBlur("password")}
-                  value={values.password}
-                  secureTextEntry
-                  // editable={isEditing}
-                  accessibilityLabel="Password Input"
-                />
-                {errors.password && touched.password && (
-                  <Text style={styles.errorText}>{errors.password}</Text>
-                )} */}
+                {/* Save Button */}
+                {dirty && (
+                  <TouchableOpacity
+                    style={styles.saveButton}
+                    onPress={handleSubmit}
+                  >
+                    <Text style={styles.saveButtonText}>Save Changes</Text>
+                  </TouchableOpacity>
+                )}
 
-                {/* Pet Profiles Section */}
+                {/* Pets Section */}
                 <View style={styles.petSection}>
                   <Text style={[styles.sectionTitle, dynamicTextStyle]}>
                     My Pets
                   </Text>
+
                   {Array.isArray(petProfiles) && petProfiles.length === 0 ? (
                     <Text
                       style={{
@@ -446,42 +466,101 @@ const UserProfile = () => {
                       You don't have any pets yet.
                     </Text>
                   ) : (
-                    Array.isArray(petProfiles) &&
                     petProfiles.map((pet) => (
                       <View key={pet.petId} style={styles.petProfile}>
-                        <Image
+                        {/* <Image
                           source={require("../assets/pet-placeholder.png")}
                           style={styles.petImage}
+                        /> */}
+                        {/* <Image
+                          source={
+                            pet.imageUri
+                              ? { uri: pet.imageUri }
+                              : require("../assets/pet-placeholder.png")
+                          }
+                          style={styles.petImage}
+                        /> */}
+                        <Image
+                          source={
+                            pet.avatar
+                              ? { uri: `${BASE_URL}${pet.avatar}` }
+                              : require("../assets/pet-placeholder.png")
+                          }
+                          style={styles.petImage}
                         />
-                        {isEditing ? (
-                          <TextInput
-                            style={[
-                              styles.petNameInput,
-                              {
-                                color: dynamicTextStyle.color,
-                                borderColor: dynamicTextStyle.color,
-                              },
-                            ]}
-                            value={petNameEdits[pet.petId] ?? pet.petName}
-                            onChangeText={(text) =>
-                              setPetNameEdits((prev) => ({
-                                ...prev,
-                                [pet.petId]: text,
-                              }))
-                            }
-                            onBlur={() => {
-                              const newName = petNameEdits[pet.petId];
-                              if (newName && newName !== pet.petName) {
-                                updatePetName(pet.petId, newName);
-                              }
-                            }}
-                          />
-                        ) : (
-                          <Text style={[styles.petName, dynamicTextStyle]}>
-                            {pet.petName} ({pet.breed || "Unknown breed"})
-                          </Text>
-                        )}
-                        {isEditing && (
+                        <View style={{ flex: 1 }}>
+                          {isEditingPets ? (
+                            <>
+                              <TextInput
+                                style={[
+                                  styles.petNameInput,
+                                  {
+                                    color: dynamicTextStyle.color,
+                                    borderColor: dynamicTextStyle.color,
+                                  },
+                                ]}
+                                value={petNameEdits[pet.petId] ?? pet.petName}
+                                onChangeText={(text) =>
+                                  setPetNameEdits((prev) => ({
+                                    ...prev,
+                                    [pet.petId]: text,
+                                  }))
+                                }
+                                // onBlur={() => {
+                                //   const newName = petNameEdits[pet.petId];
+                                //   if (newName && newName !== pet.petName) {
+                                //     updatePetInfo(
+                                //       pet.petId,
+                                //       newName,
+                                //       pet.breed
+                                //     );
+                                //   }
+                                // }}
+                                placeholder="Pet Name"
+                                placeholderTextColor={
+                                  isDarkMode ? "#aaa" : "#5D4037"
+                                }
+                              />
+                              <TextInput
+                                style={[
+                                  styles.petNameInput,
+                                  {
+                                    color: dynamicTextStyle.color,
+                                    borderColor: dynamicTextStyle.color,
+                                    marginTop: 8,
+                                  },
+                                ]}
+                                value={petBreedEdits[pet.petId] ?? pet.breed}
+                                onChangeText={(text) =>
+                                  setPetBreedEdits((prev) => ({
+                                    ...prev,
+                                    [pet.petId]: text,
+                                  }))
+                                }
+                                // onBlur={() => {
+                                //   const newBreed = petBreedEdits[pet.petId];
+                                //   if (newBreed && newBreed !== pet.breed) {
+                                //     updatePetInfo(
+                                //       pet.petId,
+                                //       pet.petName,
+                                //       newBreed
+                                //     );
+                                //   }
+                                // }}
+                                placeholder="Pet Breed"
+                                placeholderTextColor={
+                                  isDarkMode ? "#aaa" : "#5D4037"
+                                }
+                              />
+                            </>
+                          ) : (
+                            <Text style={[styles.petName, dynamicTextStyle]}>
+                              {pet.petName} ({pet.breed || "Unknown breed"})
+                            </Text>
+                          )}
+                        </View>
+
+                        {isEditingPets && (
                           <TouchableOpacity
                             style={styles.removePetButton}
                             onPress={() => removePetProfile(pet.petId)}
@@ -494,56 +573,41 @@ const UserProfile = () => {
                       </View>
                     ))
                   )}
-                  {/* Add Pet Button */}
-                  {isEditing && (
+
+                  {isEditingPets && (
                     <TouchableOpacity
                       style={styles.addPetButton}
-                      onPress={addPetProfile}
-                      accessibilityLabel="Add Pet Button"
+                      // onPress={addPetProfile}
+                      onPress={() => navigation.navigate("AddPet")}
                     >
                       <Text style={styles.addPetButtonText}>Add Pet</Text>
                     </TouchableOpacity>
                   )}
                 </View>
 
-                {/* Edit / Save / Cancel Buttons */}
-                {isEditing ? (
-                  <View style={styles.buttonRow}>
-                    <TouchableOpacity
-                      style={styles.saveButton}
-                      onPress={handleSubmit}
-                      accessibilityLabel="Save Profile Button"
-                    >
-                      <Text style={styles.saveButtonText}>Save Profile</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.cancelButton}
-                      onPress={() => handleCancelEditing(resetForm)}
-                      accessibilityLabel="Cancel Editing Button"
-                    >
-                      <Text style={styles.cancelButtonText}>Cancel</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={() => {
-                      LayoutAnimation.configureNext(
-                        LayoutAnimation.Presets.easeInEaseOut
-                      );
-                      setIsEditing(true);
-                    }}
-                    accessibilityLabel="Edit Profile Button"
-                  >
-                    <Text style={styles.editButtonText}>Edit Profile</Text>
-                  </TouchableOpacity>
-                )}
+                {/* Edit Pets Button */}
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={() => {
+                    LayoutAnimation.configureNext(
+                      LayoutAnimation.Presets.easeInEaseOut
+                    );
+                    if (isEditingPets) {
+                      handleSavePetProfiles(); // Save edits when finishing
+                    } else {
+                      setIsEditingPets(true); // Start editing
+                    }
+                  }}
+                >
+                  <Text style={styles.editButtonText}>
+                    {isEditingPets ? "Done Editing Pets" : "Edit My Pets"}
+                  </Text>
+                </TouchableOpacity>
 
                 {/* Back Button */}
                 <TouchableOpacity
-                  style={[styles.backButton, { marginLeft: 10 }]}
+                  style={[styles.backButton, { marginTop: 20 }]}
                   onPress={() => navigation.goBack()}
-                  accessibilityLabel="Go Back Button"
                 >
                   <Text style={[styles.backButtonText, dynamicTextStyle]}>
                     Go Back
@@ -557,7 +621,6 @@ const UserProfile = () => {
     </KeyboardAvoidingView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
@@ -577,7 +640,7 @@ const styles = StyleSheet.create({
     borderRadius: 65,
     marginBottom: 20,
     borderWidth: 2,
-    borderColor: "#FBC02D", // playful golden border
+    borderColor: "#FBC02D",
   },
   input: {
     width: "100%",
@@ -595,35 +658,15 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     fontSize: 14,
   },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    marginTop: 15,
-  },
   saveButton: {
     backgroundColor: "#FF7043",
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 30,
-    flex: 1,
-    marginRight: 5,
+    marginTop: 10,
+    width: "100%",
   },
   saveButtonText: {
-    fontSize: 16,
-    color: "#fff",
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  cancelButton: {
-    backgroundColor: "#D32F2F",
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 30,
-    flex: 1,
-    marginLeft: 5,
-  },
-  cancelButtonText: {
     fontSize: 16,
     color: "#fff",
     fontWeight: "bold",
@@ -634,7 +677,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 30,
     borderRadius: 30,
-    marginTop: 15,
+    marginTop: 20,
   },
   editButtonText: {
     fontSize: 16,
@@ -685,7 +728,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#FDD835",
     fontSize: 16,
-    marginRight: 10,
+    marginBottom: 5,
   },
   removePetButton: {
     backgroundColor: "#D32F2F",

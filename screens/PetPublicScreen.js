@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { 
   View, 
   Text, 
@@ -10,52 +10,105 @@ import {
   SafeAreaView,
   Modal,
   TextInput,
-  Button
+  Button,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Platform,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ThemeContext } from '../ThemeContext';
+import { BASE_URL } from '../config'; // adjust path if needed
 
-// Dummy data representing a list of pet profiles with an ownerId
-const initialPetProfiles = [
-  { id: '1', petName: "Buddy", ownerId: "1", petAvatar: require('../assets/pet-placeholder.png'), petBio: "Loyal and energetic." },
-  { id: '2', petName: "Max", ownerId: "2", petAvatar: require('../assets/pet-placeholder.png'), petBio: "Curious and playful." },
-  { id: '3', petName: "Bella", ownerId: "1", petAvatar: require('../assets/pet-placeholder.png'), petBio: "Small and adorable." },
-  // Add more pet profiles as needed
-];
-
-// Assume currentUserId represents the logged in user
-const currentUserId = "1";
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function PetProfilesScreen() {
   const navigation = useNavigation();
-  const [petProfiles, setPetProfiles] = useState(initialPetProfiles);
+  const { isDarkMode } = useContext(ThemeContext);
+
+  const [petProfiles, setPetProfiles] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedPet, setSelectedPet] = useState(null);
   const [editedBio, setEditedBio] = useState('');
 
+  // Fetch pets from backend
+  const fetchPets = async () => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) {
+        console.error('No userId found');
+        return;
+      }
+
+      const response = await fetch(`${BASE_URL}/api/pets/${userId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch pets');
+      }
+
+      const data = await response.json();
+      console.log('🐾 Pets fetched:', data);
+      setPetProfiles(data);
+
+    } catch (error) {
+      console.error('Error fetching pets:', error);
+    }
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchPets();
+    }, [])
+  );
+
   const openEditModal = (pet) => {
     setSelectedPet(pet);
-    setEditedBio(pet.petBio);
+    setEditedBio(pet.bio || ''); // Fallback if bio is missing
     setModalVisible(true);
   };
 
   const saveBio = () => {
-    // Update the petProfiles state with the new bio
+    Keyboard.dismiss();
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+
     const updatedProfiles = petProfiles.map(pet => 
-      pet.id === selectedPet.id ? { ...pet, petBio: editedBio } : pet
+      pet.id === selectedPet.id ? { ...pet, bio: editedBio } : pet
     );
     setPetProfiles(updatedProfiles);
     setModalVisible(false);
   };
 
   const renderItem = ({ item }) => (
-    <View style={styles.itemContainer}>
-      <Image source={item.petAvatar} style={styles.petAvatar} />
+    <View style={[
+      styles.itemContainer,
+      {
+        backgroundColor: isDarkMode ? '#333' : '#FFF5EE',
+        borderColor: isDarkMode ? '#555' : '#F5DEB3',
+      }
+    ]}>
+      <Image 
+        source={item.petAvatar ? { uri: item.petAvatar } : require('../assets/pet-placeholder.png')} 
+        style={styles.petAvatar} 
+      />
       <View style={styles.infoContainer}>
-        <Text style={styles.petName}>{item.petName}</Text>
-        <Text style={styles.petBio}>{item.petBio}</Text>
+        <Text style={[
+          styles.petName,
+          { color: isDarkMode ? '#FFDEAD' : '#8B4513' }
+        ]}>
+          {item.name}
+        </Text>
+        <Text style={[
+          styles.petBio,
+          { color: isDarkMode ? '#D3D3D3' : '#6D4C41' }
+        ]}>
+          {item.breed}
+        </Text>
       </View>
-      {/* Render Edit button only if the current user is the owner */}
-      {item.ownerId === currentUserId && (
+      {item.ownerId && (
         <TouchableOpacity 
           style={styles.editButton} 
           onPress={() => openEditModal(item)}
@@ -68,14 +121,24 @@ export default function PetProfilesScreen() {
 
   return (
     <ImageBackground
-      source={require('../assets/petBackground1.jpg')} // Add your background image here
+      source={require('../assets/petBackground1.jpg')}
       style={styles.backgroundImage}
     >
-      <SafeAreaView style={styles.container}>
-        {/* Pet themed header */}
-        <View style={styles.header}>
+      <SafeAreaView style={[
+        styles.container,
+        { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.6)' : 'rgba(255,250,240,0.56)' }
+      ]}>
+        <View style={[
+          styles.header,
+          { backgroundColor: isDarkMode ? '#333' : '#FFD700', borderBottomColor: isDarkMode ? '#555' : '#F0E68C' }
+        ]}>
           <Image source={require('../assets/pawIcon.png')} style={styles.pawIcon} />
-          <Text style={styles.headerText}>My Pet Profiles</Text>
+          <Text style={[
+            styles.headerText,
+            { color: isDarkMode ? '#FFDEAD' : '#8B4513' }
+          ]}>
+            {isDarkMode ? "🌙 My Pet Profiles" : "☀️ My Pet Profiles"}
+          </Text>
         </View>
 
         <FlatList
@@ -83,31 +146,58 @@ export default function PetProfilesScreen() {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <Text style={{ textAlign: 'center', marginTop: 20, color: isDarkMode ? '#fff' : '#000' }}>
+              No pets found. 🐾
+            </Text>
+          }
         />
 
-        {/* Modal for editing pet bio */}
+        {/* Modal Bottom Sheet */}
         <Modal
           visible={modalVisible}
           animationType="slide"
           transparent={true}
           onRequestClose={() => setModalVisible(false)}
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Edit Bio for {selectedPet?.petName}</Text>
-              <TextInput
-                style={styles.input}
-                value={editedBio}
-                onChangeText={setEditedBio}
-                multiline
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.bottomSheetOverlay}>
+              <TouchableOpacity
+                style={{ flex: 1 }}
               />
-              <View style={styles.modalButtons}>
-                <Button title="Cancel" onPress={() => setModalVisible(false)} />
-                <Button title="Save" onPress={saveBio} />
+              <View style={[
+                styles.bottomSheetContainer,
+                { backgroundColor: isDarkMode ? '#222' : '#FFF', borderColor: isDarkMode ? '#555' : '#F0E68C' }
+              ]}>
+                <View style={styles.bottomSheetHandle} />
+                <Text style={[
+                  styles.modalTitle,
+                  { color: isDarkMode ? '#FFDEAD' : '#8B4513' }
+                ]}>
+                  Edit Bio for {selectedPet?.name}
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    { backgroundColor: isDarkMode ? '#333' : '#FFF', color: isDarkMode ? '#FFF' : '#000' }
+                  ]}
+                  value={editedBio}
+                  onChangeText={setEditedBio}
+                  multiline
+                />
+                <View style={styles.modalButtons}>
+                  <Button title="Cancel" onPress={() => setModalVisible(false)} />
+                  <Button 
+                    title="Save" 
+                    onPress={saveBio} 
+                    disabled={editedBio.trim() === '' || editedBio === selectedPet?.bio}
+                  />
+                </View>
               </View>
             </View>
-          </View>
+          </TouchableWithoutFeedback>
         </Modal>
+
       </SafeAreaView>
     </ImageBackground>
   );
@@ -120,12 +210,11 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: 'rgba(255, 250, 240, 0.56)', // Semi-transparent overlay to soften background image
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFD700', // Gold background for a playful pet vibe
+    backgroundColor: '#FFD700',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F0E68C',
@@ -138,7 +227,6 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#8B4513',
   },
   list: {
     padding: 16,
@@ -147,11 +235,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#FFF5EE', // Seashell color for a light, pet-friendly vibe
     marginBottom: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#F5DEB3', // Wheat color border for extra pet theme
   },
   petAvatar: {
     width: 80,
@@ -167,42 +253,44 @@ const styles = StyleSheet.create({
   petName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#8B4513',
   },
   petBio: {
     fontSize: 16,
-    color: '#6D4C41',
   },
   editButton: {
     padding: 8,
     backgroundColor: '#F0E68C',
-    borderRadius: 5,
-    borderWidth: 1,
+    borderRadius: 10,
+    borderWidth: 0.5,
     borderColor: '#D2B48C',
   },
   editButtonText: {
     fontSize: 14,
     color: '#8B4513',
   },
-  modalOverlay: {
+  bottomSheetOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
   },
-  modalContainer: {
-    width: '80%',
-    backgroundColor: '#FFF',
+  bottomSheetContainer: {
     padding: 20,
-    borderRadius: 10,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     borderWidth: 1,
-    borderColor: '#F0E68C',
+  },
+  bottomSheetHandle: {
+    width: 60,
+    height: 6,
+    backgroundColor: '#ccc',
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginBottom: 10,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 12,
-    color: '#8B4513',
   },
   input: {
     height: 100,
@@ -216,5 +304,6 @@ const styles = StyleSheet.create({
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 10,
   },
 });
