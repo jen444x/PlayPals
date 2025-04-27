@@ -20,6 +20,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState(null);
+  // at the top of your component
+const [isFollowing, setIsFollowing] = useState(false);
+
   const route = useRoute();
   const { userId } = route.params;
 
@@ -150,7 +153,7 @@ export default function ProfileScreen() {
 
   const handleFollow = async () => {
     if (!currentUserId || !profile?.id) return;
-
+  
     try {
       const res = await fetch(`${BASE_URL}api/users/followUser`, {
         method: 'POST',
@@ -161,15 +164,18 @@ export default function ProfileScreen() {
         }),
       });
       const data = await res.json();
+  
       if (res.ok) {
-        console.log("Follow successful!")
+        setIsFollowing(true);      // ← mark as following
+        console.log("Follow successful!");
       } else {
-        console.warn('Failed to follow:', data?.error)
+        console.warn('Failed to follow:', data?.error);
       }
     } catch (err) {
-      console.error("Follow requst failed:", err)
+      console.error("Follow request failed:", err);
     }
   };
+  
 
   // Inline memoized component for a post item
   const PostItem = React.memo(({ item, imageSize }) => {
@@ -283,14 +289,27 @@ export default function ProfileScreen() {
         {/* Action Buttons */}
         { !isCurrentUserProfile ? (
           <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity 
-              style={[styles.followButton, { backgroundColor: '#fe2c55' }]}
-              onPress={handleFollow}
-              accessibilityLabel="Follow Button"
-              accessibilityHint="Tap to follow this user"
-            >
-              <Text style={styles.followButtonText}>Follow</Text>
-            </TouchableOpacity>
+           <TouchableOpacity
+  onPress={isFollowing ? null : handleFollow}
+  disabled={isFollowing}
+  accessibilityLabel="Follow Button"
+  accessibilityHint={
+    isFollowing
+      ? "You are already following this user"
+      : "Tap to follow this user"
+  }
+  style={[
+    styles.followButton,
+    isFollowing
+      ? styles.followingButton   // grey when following
+      : { backgroundColor: '#fe2c55' } // red when not following
+  ]}
+>
+  <Text style={styles.followButtonText}>
+    {isFollowing ? 'Following' : 'Follow'}
+  </Text>
+</TouchableOpacity>
+
             <TouchableOpacity
               style={[styles.messageButton, { backgroundColor: '#2196F3' }]}
               onPress={handleStartChat}
@@ -428,6 +447,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  followingButton: {
+    backgroundColor: '#AAA',   // Grey color for "Following" button
+  },
+  
   messageButton: {
     paddingVertical: 8,
     paddingHorizontal: 30,
