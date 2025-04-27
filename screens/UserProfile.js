@@ -468,8 +468,24 @@ const UserProfile = () => {
                   ) : (
                     petProfiles.map((pet) => (
                       <View key={pet.petId} style={styles.petProfile}>
-                        <Image
+                        {/* <Image
                           source={require("../assets/pet-placeholder.png")}
+                          style={styles.petImage}
+                        /> */}
+                        {/* <Image
+                          source={
+                            pet.imageUri
+                              ? { uri: pet.imageUri }
+                              : require("../assets/pet-placeholder.png")
+                          }
+                          style={styles.petImage}
+                        /> */}
+                        <Image
+                          source={
+                            pet.avatar
+                              ? { uri: `${BASE_URL}${pet.avatar}` }
+                              : require("../assets/pet-placeholder.png")
+                          }
                           style={styles.petImage}
                         />
                         <View style={{ flex: 1 }}>
@@ -572,12 +588,6 @@ const UserProfile = () => {
                 {/* Edit Pets Button */}
                 <TouchableOpacity
                   style={styles.editButton}
-                  // onPress={() => {
-                  //   LayoutAnimation.configureNext(
-                  //     LayoutAnimation.Presets.easeInEaseOut
-                  //   );
-                  //   setIsEditingPets((prev) => !prev);
-                  // }}
                   onPress={() => {
                     LayoutAnimation.configureNext(
                       LayoutAnimation.Presets.easeInEaseOut
