@@ -25,7 +25,10 @@ import * as Yup from "yup";
 import { ThemeContext } from "../ThemeContext"; // adjust path
 import { BASE_URL } from "../config.js";
 
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
@@ -91,7 +94,8 @@ const UserProfile = () => {
 
   const pickImage = async () => {
     try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permissionResult.granted) {
         showToast("Permission to access media library is required!");
         return;
@@ -131,8 +135,24 @@ const UserProfile = () => {
         body: JSON.stringify(payload),
       });
 
-      const resText = await res.text();
-      if (!res.ok) throw new Error(resText || "Update failed");
+      // const resText = await res.text();
+      const resJson = await res.json();
+      console.log("🔍 Server response:", resJson);
+
+      // if (!res.ok) throw new Error(resText || "Update failed");
+      if (!res.ok) {
+        if (resJson.message === "Email and username are already in use.") {
+          showToast("Both the email and username are already taken!");
+        } else if (resJson.message === "Email is already in use.") {
+          showToast("That email is already taken!");
+        } else if (resJson.message === "Username is already in use.") {
+          showToast("That username is already taken!");
+        } else {
+          showToast(resJson.message || "Update failed");
+        }
+        // DO NOT throw error here! (stop crashing the app)
+        return;
+      }
 
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setOriginalProfile({ ...values, profileImage, petProfiles });
@@ -231,23 +251,31 @@ const UserProfile = () => {
 
       setPetProfiles((prevPets) =>
         prevPets.map((pet) =>
-          pet.petId === petId ? { ...pet, petName: newName, breed: newBreed } : pet
+          pet.petId === petId
+            ? { ...pet, petName: newName, breed: newBreed }
+            : pet
         )
       );
 
       showToast("Pet info updated!");
     } catch (err) {
       console.error("Error updating pet:", err);
-      showToast("An error occurred while updating pet info.");
+      showToast("An error occurred while updating pet name.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView contentContainerStyle={[styles.container, dynamicContainerStyle]} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={[styles.container, dynamicContainerStyle]}
+          keyboardShouldPersistTaps="handled"
+        >
           <Text style={[styles.title, dynamicTextStyle]}>My Pet Profiles</Text>
 
           <Formik
@@ -257,7 +285,9 @@ const UserProfile = () => {
               email: originalProfile.email,
             }}
             validationSchema={ProfileSchema}
-            onSubmit={(values, { resetForm }) => handleSaveProfile(values, resetForm)}
+            onSubmit={(values, { resetForm }) =>
+              handleSaveProfile(values, resetForm)
+            }
           >
             {({
               handleChange,
@@ -272,17 +302,32 @@ const UserProfile = () => {
                 {/* Profile Image */}
                 <TouchableOpacity onPress={pickImage} disabled={isLoading}>
                   {isLoading ? (
-                    <ActivityIndicator size="large" color={isDarkMode ? "#FFCCBC" : "#5D4037"} />
+                    <ActivityIndicator
+                      size="large"
+                      color={isDarkMode ? "#FFCCBC" : "#5D4037"}
+                    />
                   ) : profileImage ? (
-                    <Image source={{ uri: profileImage }} style={styles.profileImage} />
+                    <Image
+                      source={{ uri: profileImage }}
+                      style={styles.profileImage}
+                    />
                   ) : (
-                    <Image source={require("../assets/avatar.png")} style={styles.profileImage} />
+                    <Image
+                      source={require("../assets/avatar.png")}
+                      style={styles.profileImage}
+                    />
                   )}
                 </TouchableOpacity>
 
                 {/* Username and Email */}
                 <TextInput
-                  style={[styles.input, { color: dynamicTextStyle.color, borderColor: dynamicTextStyle.color }]}
+                  style={[
+                    styles.input,
+                    {
+                      color: dynamicTextStyle.color,
+                      borderColor: dynamicTextStyle.color,
+                    },
+                  ]}
                   placeholder="Your Username"
                   placeholderTextColor={isDarkMode ? "#aaa" : "#5D4037"}
                   onChangeText={handleChange("username")}
@@ -295,7 +340,13 @@ const UserProfile = () => {
                 )}
 
                 <TextInput
-                  style={[styles.input, { color: dynamicTextStyle.color, borderColor: dynamicTextStyle.color }]}
+                  style={[
+                    styles.input,
+                    {
+                      color: dynamicTextStyle.color,
+                      borderColor: dynamicTextStyle.color,
+                    },
+                  ]}
                   placeholder="Your Email"
                   placeholderTextColor={isDarkMode ? "#aaa" : "#5D4037"}
                   onChangeText={handleChange("email")}
@@ -310,28 +361,47 @@ const UserProfile = () => {
 
                 {/* Save Button */}
                 {dirty && (
-                  <TouchableOpacity style={styles.saveButton} onPress={handleSubmit}>
+                  <TouchableOpacity
+                    style={styles.saveButton}
+                    onPress={handleSubmit}
+                  >
                     <Text style={styles.saveButtonText}>Save Changes</Text>
                   </TouchableOpacity>
                 )}
 
                 {/* Pets Section */}
                 <View style={styles.petSection}>
-                  <Text style={[styles.sectionTitle, dynamicTextStyle]}>My Pets</Text>
+                  <Text style={[styles.sectionTitle, dynamicTextStyle]}>
+                    My Pets
+                  </Text>
 
                   {Array.isArray(petProfiles) && petProfiles.length === 0 ? (
-                    <Text style={{ textAlign: "center", color: dynamicTextStyle.color }}>
+                    <Text
+                      style={{
+                        textAlign: "center",
+                        color: dynamicTextStyle.color,
+                      }}
+                    >
                       You don't have any pets yet.
                     </Text>
                   ) : (
                     petProfiles.map((pet) => (
                       <View key={pet.petId} style={styles.petProfile}>
-                        <Image source={require("../assets/pet-placeholder.png")} style={styles.petImage} />
+                        <Image
+                          source={require("../assets/pet-placeholder.png")}
+                          style={styles.petImage}
+                        />
                         <View style={{ flex: 1 }}>
                           {isEditingPets ? (
                             <>
                               <TextInput
-                                style={[styles.petNameInput, { color: dynamicTextStyle.color, borderColor: dynamicTextStyle.color }]}
+                                style={[
+                                  styles.petNameInput,
+                                  {
+                                    color: dynamicTextStyle.color,
+                                    borderColor: dynamicTextStyle.color,
+                                  },
+                                ]}
                                 value={petNameEdits[pet.petId] ?? pet.petName}
                                 onChangeText={(text) =>
                                   setPetNameEdits((prev) => ({
@@ -342,14 +412,27 @@ const UserProfile = () => {
                                 onBlur={() => {
                                   const newName = petNameEdits[pet.petId];
                                   if (newName && newName !== pet.petName) {
-                                    updatePetInfo(pet.petId, newName, pet.breed);
+                                    updatePetInfo(
+                                      pet.petId,
+                                      newName,
+                                      pet.breed
+                                    );
                                   }
                                 }}
                                 placeholder="Pet Name"
-                                placeholderTextColor={isDarkMode ? "#aaa" : "#5D4037"}
+                                placeholderTextColor={
+                                  isDarkMode ? "#aaa" : "#5D4037"
+                                }
                               />
                               <TextInput
-                                style={[styles.petNameInput, { color: dynamicTextStyle.color, borderColor: dynamicTextStyle.color, marginTop: 8 }]}
+                                style={[
+                                  styles.petNameInput,
+                                  {
+                                    color: dynamicTextStyle.color,
+                                    borderColor: dynamicTextStyle.color,
+                                    marginTop: 8,
+                                  },
+                                ]}
                                 value={petBreedEdits[pet.petId] ?? pet.breed}
                                 onChangeText={(text) =>
                                   setPetBreedEdits((prev) => ({
@@ -360,11 +443,17 @@ const UserProfile = () => {
                                 onBlur={() => {
                                   const newBreed = petBreedEdits[pet.petId];
                                   if (newBreed && newBreed !== pet.breed) {
-                                    updatePetInfo(pet.petId, pet.petName, newBreed);
+                                    updatePetInfo(
+                                      pet.petId,
+                                      pet.petName,
+                                      newBreed
+                                    );
                                   }
                                 }}
                                 placeholder="Pet Breed"
-                                placeholderTextColor={isDarkMode ? "#aaa" : "#5D4037"}
+                                placeholderTextColor={
+                                  isDarkMode ? "#aaa" : "#5D4037"
+                                }
                               />
                             </>
                           ) : (
@@ -375,8 +464,13 @@ const UserProfile = () => {
                         </View>
 
                         {isEditingPets && (
-                          <TouchableOpacity style={styles.removePetButton} onPress={() => removePetProfile(pet.petId)}>
-                            <Text style={styles.removePetButtonText}>Remove</Text>
+                          <TouchableOpacity
+                            style={styles.removePetButton}
+                            onPress={() => removePetProfile(pet.petId)}
+                          >
+                            <Text style={styles.removePetButtonText}>
+                              Remove
+                            </Text>
                           </TouchableOpacity>
                         )}
                       </View>
@@ -384,7 +478,10 @@ const UserProfile = () => {
                   )}
 
                   {isEditingPets && (
-                    <TouchableOpacity style={styles.addPetButton} onPress={addPetProfile}>
+                    <TouchableOpacity
+                      style={styles.addPetButton}
+                      onPress={addPetProfile}
+                    >
                       <Text style={styles.addPetButtonText}>Add Pet</Text>
                     </TouchableOpacity>
                   )}
@@ -394,7 +491,9 @@ const UserProfile = () => {
                 <TouchableOpacity
                   style={styles.editButton}
                   onPress={() => {
-                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                    LayoutAnimation.configureNext(
+                      LayoutAnimation.Presets.easeInEaseOut
+                    );
                     setIsEditingPets((prev) => !prev);
                   }}
                 >
@@ -404,8 +503,13 @@ const UserProfile = () => {
                 </TouchableOpacity>
 
                 {/* Back Button */}
-                <TouchableOpacity style={[styles.backButton, { marginTop: 20 }]} onPress={() => navigation.goBack()}>
-                  <Text style={[styles.backButtonText, dynamicTextStyle]}>Go Back</Text>
+                <TouchableOpacity
+                  style={[styles.backButton, { marginTop: 20 }]}
+                  onPress={() => navigation.goBack()}
+                >
+                  <Text style={[styles.backButtonText, dynamicTextStyle]}>
+                    Go Back
+                  </Text>
                 </TouchableOpacity>
               </>
             )}
