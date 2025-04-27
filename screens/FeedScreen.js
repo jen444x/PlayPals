@@ -254,19 +254,23 @@ export default function FeedScreen() {
         visible={commentModalVisible}
         onRequestClose={closeComments}
       >
-        <View style={styles.modalBackground}>
+        <KeyboardAvoidingView
+          style={styles.modalBackground}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={0} // adjust this if needed
+        >
           <View style={styles.modalContainer}>
-          {/* Top Bar */}
-          <View style={styles.topBar}>
-            <Text style={{ width: 40 }}> </Text> 
-            <Text style={styles.modalTitle}>Comments</Text>            
-            <TouchableOpacity onPress={closeComments} style={styles.closeButtonContainer}>
-              <Image 
-                source={exitIcon} 
-                style={styles.exitIcon} 
-              />
-            </TouchableOpacity>
-          </View>
+            {/* Top Bar */}
+            <View style={styles.topBar}>
+              <Text style={{ width: 40 }}> </Text> 
+              <Text style={styles.modalTitle}>Comments</Text>            
+              <TouchableOpacity onPress={closeComments} style={styles.closeButtonContainer}>
+                <Image 
+                  source={exitIcon} 
+                  style={styles.exitIcon} 
+                />
+              </TouchableOpacity>
+            </View>
 
             <FlatList 
               data={comments}
@@ -278,25 +282,21 @@ export default function FeedScreen() {
                 </View>
               )}
             />
-            <KeyboardAvoidingView
-              behavior={Platform.OS === "ios" ? "padding" : "height"}
-              keyboardVerticalOffset={100}
-            >
-              <View style={styles.commentInputContainer}>
-                <TextInput 
-                  style={styles.commentInput}
-                  placeholder="Add a comment..."
-                  placeholderTextColor="#999"
-                  value={newComment}
-                  onChangeText={setNewComment}
-                />
-                <TouchableOpacity onPress={postComment} style={styles.postCommentButton}>
-                  <Text style={styles.postCommentButtonText}>Post</Text>
-                </TouchableOpacity>
-              </View>
-            </KeyboardAvoidingView>
+            
+            <View style={styles.commentInputContainer}>
+              <TextInput 
+                style={styles.commentInput}
+                placeholder="Add a comment..."
+                placeholderTextColor="#999"
+                value={newComment}
+                onChangeText={setNewComment}
+              />
+              <TouchableOpacity onPress={postComment} style={styles.postCommentButton}>
+                <Text style={styles.postCommentButtonText}>Post</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -349,10 +349,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-
-
-
-
   commentButton: {
     marginTop: 10,
     backgroundColor: '#64B5F6',
