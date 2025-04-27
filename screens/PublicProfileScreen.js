@@ -294,7 +294,7 @@ export default function ProfileScreen() {
         { !isCurrentUserProfile ? (
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity 
-              style={[styles.followButton, { backgroundColor: isFollowing ? '#4CAF50':'#fe2c55' }]}
+              style={[styles.followButton, { backgroundColor: isFollowing ? '##ABADAA':'#fe2c55' }]}
               onPress={handleFollow}
               accessibilityLabel="Follow Button"
               accessibilityHint="Tap to follow this user"

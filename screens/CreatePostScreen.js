@@ -19,6 +19,7 @@ import { Video } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import mime from 'mime';
+import { BASE_URL } from '../config.js';
 
 export default function PersonalFeedScreen() {
   const [media, setMedia] = useState(null);

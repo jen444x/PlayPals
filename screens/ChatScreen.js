@@ -23,6 +23,8 @@ import { v4 as uuidv4 } from 'uuid';
 import Video from 'react-native-video';
 import { BASE_URL } from '../config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import mime from 'mime';
+import path from 'path';
 
 const host = 'wss://test2.playpals-app.com'
 
@@ -97,6 +99,7 @@ export default function ChatScreen() {
   const navigation = useNavigation();
   const { chatUser, chatId } = route.params;
   const roomId = chatId;
+  const [sentLocalIds, setSentLocalIds] = useState(new Set());
   //const { chatUser } = route.params || { chatUser: 'User2' };
 
   const [currentUser, setCurrentUser] = useState(null);
@@ -132,14 +135,23 @@ export default function ChatScreen() {
           });
 
           socket.on("message", (data) => {
-            console.log("📩 Received message:", data);
-            console.log("🧑‍💻 currentUser:", currentUser);
-      
+            const media = data.mediaUrl ? { 
+              type: data.mediaType, 
+              uri: BASE_URL + data.mediaUrl
+            } : null;
+          
+            // SKIP if a message was sent
+            if (data.localId && sentLocalIds.has(data.localId)) {
+              console.log('Duplicate local message received, skipping.');
+              return;
+            }
+            
             setMessages((prev) => [...prev, {
               id: uuidv4(),
               sender: data.name,
               content: data.text,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
+              media: media,
             }]);
           });
 
@@ -149,6 +161,10 @@ export default function ChatScreen() {
               sender: msg.name,
               content: msg.text,
               timestamp: msg.time,
+              media: msg.mediaUrl ? { 
+                type: msg.mediaType, 
+                uri: BASE_URL + msg.mediaUrl
+              } : null,
             }));
             setMessages(formatted);
           });
@@ -198,6 +214,7 @@ export default function ChatScreen() {
       Alert.alert("Empty Message", "Please enter a message before sending.");
       return;
     }
+    const localMessageId = uuidv4();
     const newMessage = {
       id: uuidv4(),
       sender: currentUser,
@@ -210,6 +227,7 @@ export default function ChatScreen() {
       userId: currentUserId,
       chatId: chatId,
       text: inputMessage,
+      localId: localMessageId,
     });
 
     setInputMessage('');
@@ -219,6 +237,7 @@ export default function ChatScreen() {
         flatListRef.current.scrollToEnd({ animated: true });
       }
     }, 100);
+    setSentLocalIds(prev => new Set(prev).add(localMessageId));
   };
 
   const handleTyping = () => {
@@ -244,25 +263,66 @@ export default function ChatScreen() {
     }
     // Get the first asset from the assets array
     const asset = result.assets[0];
-    if (asset) {
-      let mediaType = 'image';
-      if (asset.type === 'video' || asset.uri.match(/\.(mp4|mov)$/i)) {
-        mediaType = 'video';
+    if (!asset) return;
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const userId = await AsyncStorage.getItem('userId');
+  
+      const uri = asset.uri;
+      let fileName = uri.split('/').pop();
+      const fileType = asset.mimeType;
+
+      if (!fileName.includes('.')) {
+        const extension = mime.getExtension(fileType);
+        fileName = `${fileName}.${extension}`;
       }
-      const newMessage = {
-        id: uuidv4(),
-        sender: currentUser,
-        content: '', // optional text content; can be added later
-        timestamp: new Date().toISOString(),
-        media: { type: mediaType, uri: asset.uri },
-      };
-      setMessages(prev => [...prev, newMessage]);
-      // Scroll to bottom after attaching media
-      setTimeout(() => {
-        if (flatListRef.current) {
-          flatListRef.current.scrollToEnd({ animated: true });
-        }
-      }, 100);
+      
+  
+      const formData = new FormData();
+  
+      if (Platform.OS === 'web') {
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        formData.append('media', blob, fileName);
+      } else {
+        formData.append('media', {
+          uri,
+          name: fileName,
+          type: fileType
+        });
+      }
+      formData.append('chatId', chatId); // you might need this
+      formData.append('userId', userId); // and this if your API expects it
+  
+      const uploadResponse = await fetch(`${BASE_URL}api/chats/uploadMedia/${chatId}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+  
+      const uploadResult = await uploadResponse.json();
+  
+      if (uploadResponse.ok) {
+        const localMessageId = uuidv4();
+  
+        socket.emit("mediaMessage", {
+          name: currentUser,
+          userId: currentUserId,
+          chatId: chatId,
+          mediaUrl: uploadResult.mediaUrl,
+          mediaType: asset.type,
+          localId: localMessageId
+        });
+        setSentLocalIds(prev => new Set(prev).add(localMessageId));  
+      } else {
+        throw new Error(uploadResult.message || "Failed to upload media.");
+      }
+  
+    } catch (error) {
+      console.error("Media upload error:", error);
+      Alert.alert("Upload Failed", "There was an error uploading your media.");
     }
   };
 
