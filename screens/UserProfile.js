@@ -18,7 +18,7 @@ import {
   UIManager,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useIsFocused } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { Formik } from "formik";
 import * as Yup from "yup";
@@ -40,6 +40,7 @@ const ProfileSchema = Yup.object().shape({
 const UserProfile = () => {
   const navigation = useNavigation();
   const { isDarkMode } = useContext(ThemeContext);
+  const isFocused = useIsFocused();
 
   const [originalProfile, setOriginalProfile] = useState({
     username: "",
@@ -75,9 +76,11 @@ const UserProfile = () => {
       try {
         const userId = await AsyncStorage.getItem("userId");
 
+        // fetch user data
         const res = await fetch(`${BASE_URL}api/users/${userId}`);
         const userData = await res.json();
 
+        // fetch pet data
         const petsRes = await fetch(`${BASE_URL}api/pets/${userId}`);
         const petData = await petsRes.json();
 
@@ -89,8 +92,13 @@ const UserProfile = () => {
       }
     };
 
-    fetchUserProfile();
-  }, []);
+    // Only run fetch if the screen is active
+    if (isFocused) {
+      fetchUserProfile();
+    }
+
+    // fetchUserProfile();
+  }, [isFocused]);
 
   const pickImage = async () => {
     try {
@@ -119,6 +127,7 @@ const UserProfile = () => {
     }
   };
 
+  // what happens when you click save profile
   const handleSaveProfile = async (values, resetForm) => {
     setIsLoading(true);
     try {
@@ -480,7 +489,8 @@ const UserProfile = () => {
                   {isEditingPets && (
                     <TouchableOpacity
                       style={styles.addPetButton}
-                      onPress={addPetProfile}
+                      // onPress={addPetProfile}
+                      onPress={() => navigation.navigate("AddPet")}
                     >
                       <Text style={styles.addPetButtonText}>Add Pet</Text>
                     </TouchableOpacity>

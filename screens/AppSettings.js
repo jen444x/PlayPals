@@ -101,10 +101,6 @@ const AppSettings = () => {
     }
   };
 
-  //   useEffect(() => {
-  //     fetchUserProfile();
-  //   }, []);
-
   useFocusEffect(
     useCallback(() => {
       fetchUserProfile();
