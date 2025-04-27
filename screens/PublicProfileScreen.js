@@ -20,6 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState(null);
+  const [isFollowing, setIsFollowing] = useState(false);
   const route = useRoute();
   const { userId } = route.params;
 
@@ -68,18 +69,19 @@ export default function ProfileScreen() {
   }, [])
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || currentUserId === null) return;
 
     const fetchProfile = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}api/profile/${userId}`)
+      const res = await fetch(`${BASE_URL}api/profile/${userId}?viewerId=${currentUserId}`)
       if (!res.ok) {
         throw new Error("User not found");
       }
       const data = await res.json();
       setProfile(data);
       setBio(data.bio || "");
+      setIsFollowing(data.isFollowing || false);
     } catch (err) {
       setError("Failed to load user profile.");
       console.error(err);
@@ -88,7 +90,7 @@ export default function ProfileScreen() {
     }
     }
     fetchProfile();
-  }, [userId]);
+  }, [userId, currentUserId]);
 
   const handleSaveBio = async () => {
     // In a real app, update the backend here.
@@ -152,7 +154,11 @@ export default function ProfileScreen() {
     if (!currentUserId || !profile?.id) return;
 
     try {
-      const res = await fetch(`${BASE_URL}api/users/followUser`, {
+      const url = isFollowing
+        ? `${BASE_URL}api/users/unfollowUser`
+        : `${BASE_URL}api/users/followUser`;
+
+      const res = await fetch(`${url}?viewerId=${currentUserId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -160,9 +166,11 @@ export default function ProfileScreen() {
           followedId: profile.id,
         }),
       });
+
       const data = await res.json();
       if (res.ok) {
-        console.log("Follow successful!")
+        console.log(isFollowing ? "Unfollow successful!" : "Follow successful!");
+        setIsFollowing(!isFollowing);
       } else {
         console.warn('Failed to follow:', data?.error)
       }
@@ -284,12 +292,14 @@ export default function ProfileScreen() {
         { !isCurrentUserProfile ? (
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity 
-              style={[styles.followButton, { backgroundColor: '#fe2c55' }]}
+              style={[styles.followButton, { backgroundColor: isFollowing ? '#4CAF50':'#fe2c55' }]}
               onPress={handleFollow}
               accessibilityLabel="Follow Button"
               accessibilityHint="Tap to follow this user"
             >
-              <Text style={styles.followButtonText}>Follow</Text>
+              <Text style={styles.followButtonText}>
+                {isFollowing ? 'Unfollow' : 'Follow'}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.messageButton, { backgroundColor: '#2196F3' }]}
