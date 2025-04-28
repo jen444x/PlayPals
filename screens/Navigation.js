@@ -65,7 +65,7 @@ const Tab = createBottomTabNavigator();
 export default function PersonalFeedNav({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-
+  const [userAvatar, setUserAvatar] = useState(null);
   
 const handleSearch = async () => {
   if (!searchQuery) return;
@@ -93,11 +93,30 @@ const handleSearch = async () => {
 };
 
   //Create the PlayPals header
+  
+  useLayoutEffect(() => {
+    const setupHeader = async () => {
+      const userId = await AsyncStorage.getItem('userId');
+      const res = await fetch(`${BASE_URL}api/profile/${userId}`);
+      const data = await res.json();
+      setUserAvatar(data.avatar); // save avatar to state
+    };
+  
+    setupHeader();
+  }, []);
 
   useLayoutEffect(() => {
     const setupHeader = async () => {
     const userId = await AsyncStorage.getItem('userId');
     const username = await AsyncStorage.getItem('username');
+
+    //try {
+    //  const res = await fetch(`${BASE_URL}api/profile/${userId}`);
+    //  const data = await res.json();
+    //  setUserAvatar(data.avatar); 
+    //} catch (err) {
+    //  console.error("Failed to fetch avatar", err);
+    // }  
 
     navigation.setOptions({
       title: "PlayPals",
@@ -131,15 +150,26 @@ const handleSearch = async () => {
       headerLeft: () => (
         <TouchableOpacity onPress={() => navigation.navigate("Profile", {userId: parseInt(userId) })}> 
           <Image 
-            source={require('../assets/profile.png')} // Load the profile image later this will be a users pfp
-            style={{ width: 30, height: 30, marginLeft: 10 }} // Adjust the size and margin as needed
+            source={
+              userAvatar
+                ? { uri: `${BASE_URL}${userAvatar}` }
+                : require('../assets/profile.png')
+            }
+            style={{ 
+              width: 30, 
+              height: 30, 
+              marginLeft: 10,
+              borderRadius: 15,
+              overflow: 'hidden'
+            }} 
+            resizeMode="cover"
           />
         </TouchableOpacity>
       ),
     });
   }
   setupHeader();
-  }, [navigation, searchQuery]);
+  }, [navigation, searchQuery, userAvatar]);
 
   //the tab navigator for the different tabs at the bottom of screen
   return (
