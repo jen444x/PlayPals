@@ -323,7 +323,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.petButton, { backgroundColor: '#007AFF' }]}
-              onPress={() => navigation.navigate('PetPublic')}
+              onPress={() => navigation.navigate('PetPublic', { userId: profile?.id })}
               accessibilityLabel="View Pet Profiles Button"
               accessibilityHint="Tap to view pet profiles"
             >
@@ -333,7 +333,7 @@ export default function ProfileScreen() {
         ) : (
           <TouchableOpacity 
             style={[styles.petButton, { backgroundColor: '#007AFF' }]}
-            onPress={() => navigation.navigate('PetPublic')}
+            onPress={() => navigation.navigate('PetPublic', { userId: profile?.id })}
             accessibilityLabel="View Pet Profiles Button"
             accessibilityHint="Tap to view pet profiles"
           >
