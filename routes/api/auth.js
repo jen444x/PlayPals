@@ -8,9 +8,8 @@ const config = require("../../config");
 const saltRounds = 10;
 
 router.post("/registerUser", async (req, res) => {
-  const username = req.body.username;
-  // const username = "john";
-  const email = req.body.email;
+  const username = req.body.username?.toLowerCase();
+  const email = req.body.email?.toLowerCase();
   const password = req.body.password;
 
   console.log(username);
@@ -23,7 +22,7 @@ router.post("/registerUser", async (req, res) => {
   // check if email is already used
   try {
     const result = await pool.query(
-      "SELECT COUNT(*) AS count FROM users WHERE email = $1",
+      "SELECT COUNT(*) AS count FROM users WHERE LOWER(email) = $1",
       [email]
     );
 
@@ -37,7 +36,7 @@ router.post("/registerUser", async (req, res) => {
   // check if username is already used
   try {
     const result = await pool.query(
-      "SELECT COUNT(*) AS count FROM users WHERE username = $1",
+      "SELECT COUNT(*) AS count FROM users WHERE LOWER(username) = $1",
       [username]
     );
 
@@ -66,17 +65,19 @@ router.post("/registerUser", async (req, res) => {
 });
 
 router.post("/loginUser", async (req, res) => {
-  const email = req.body.email;
-  const loginPassword = req.body.password;
+  const email = req.body.email?.toLowerCase();
+  const loginPassword = req.body.password?.toLowerCase();
+
   try {
     // check if all field were entered
     if (!email || !loginPassword) {
       return res.status(400).json({ message: "Missing fields." });
     }
     // search for user
-    const result = await pool.query("SELECT * FROM users WHERE email = $1", [
-      email,
-    ]);
+    const result = await pool.query(
+      "SELECT * FROM users WHERE LOWER(email) = $1",
+      [email]
+    );
     if (result.rows.length > 0) {
       // if user is found, get their stored hashed pw
       const user = result.rows[0];
@@ -89,9 +90,12 @@ router.post("/loginUser", async (req, res) => {
           expiresIn: "1h",
         });
 
-        return res
-          .status(200)
-          .json({ message: "logged in", token, userId: user.id, username: user.username });
+        return res.status(200).json({
+          message: "logged in",
+          token,
+          userId: user.id,
+          username: user.username,
+        });
       } else {
         // if password didn't match
         return res.status(401).json({ message: "Incorrect credentials" });

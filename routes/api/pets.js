@@ -1,6 +1,33 @@
 var express = require("express");
 const pool = require("../../sql/config.js");
 const checkUserExists = require("../../middleware/checkUserExists.js");
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
+const mime = require('mime-types');
+
+const storage = multer.diskStorage({
+  destination: function(req, file, callback) {
+    const userId = req.params.userId;
+    const petId = req.params.petId;
+    const uploadPath = path.join(__dirname, '../../public/images/user_' + userId + '/avatars/pets/' + petId);
+
+    fs.mkdirSync(uploadPath, { recursive: true });
+
+    callback(null, uploadPath);
+  },
+  filename: function (req, file, callback) {
+    let ext = path.extname(file.originalname);
+    if (!ext) {
+      ext = '.' + mime.extension(file.mimetype);
+    }
+    const uniqueName = 'pet-' + '-' + Date.now() + ext;
+    console.log("Saving image as:", uniqueName);
+    callback(null, uniqueName);
+  }
+});
+
+const uploadPetAvatar = multer({ storage: storage });
 
 var router = express.Router();
 
@@ -52,6 +79,8 @@ router.post("/:userId", async (req, res) => {
       `INSERT INTO pets ("petName", breed, "userId", birthday) VALUES ($1, $2, $3, $4) RETURNING *`,
       [name, breed, userId, parsedBirthday]
     );
+
+    console.log(newPet.rows[0]);
 
     res.status(201).json(newPet.rows[0]);
   } catch (error) {
@@ -188,5 +217,36 @@ router.delete("/:userId/:petId", async (req, res) => {
 });
 
 // DELETE MULTIPLE PETS?
+
+// Upload pet avatar image
+router.post("/:userId/:petId/uploadAvatar", uploadPetAvatar.single('avatar'), async (req, res) => {
+  const userId = req.params.userId;
+  const petId = req.params.petId;
+
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded."});
+  }
+
+  const avatarPath = `images/user_${userId}/avatars/pets/${petId}/${req.file.filename}`;
+
+  try {
+    const result = await pool.query(
+      `UPDATE pets SET 
+      "avatar" = $1 WHERE "petId" = $2 AND "userId" = $3
+      RETURNING *`,
+      [avatarPath, petId, userId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Pet not found/unauthorized."})
+    }
+
+    res.status(200).json({ message: "Avatar upload success", pet: result.rows[0]})
+
+  } catch (error) {
+    console.error("Errpr uploading avatar:", error.message);
+    res.status(500).json({ message: "Server error while uploadaing avatar."})
+  }
+})
 
 module.exports = router;

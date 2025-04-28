@@ -17,7 +17,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-
 router.get("/search", async (req, res) => {
   const query = req.query.q;
 
@@ -26,9 +25,11 @@ router.get("/search", async (req, res) => {
   }
 
   try {
-    const result = await pool.query(`
+    const result = await pool.query(
+      `
       SELECT id, username FROM users WHERE username ILIKE $1`,
-      [`%${query}%`]);
+      [`%${query}%`]
+    );
     console.log(result.rows);
     res.json(result.rows);
   } catch (err) {
@@ -37,23 +38,42 @@ router.get("/search", async (req, res) => {
   }
 });
 
-router.post('/followUser', async (req, res) => {
-  const {followerId, followedId } = req.body;
-  
+router.post("/followUser", async (req, res) => {
+  const { followerId, followedId } = req.body;
+
   try {
     await pool.query(
       `INSERT INTO 
         follows ("followerId", "followedId", "createdAt")
         VALUES ($1, $2, NOW())
         ON CONFLICT DO NOTHING
-      `, [followerId, followedId]
+      `,
+      [followerId, followedId]
     );
-    res.status(200).json({ message: 'Follow successful'});
+    res.status(200).json({ message: "Follow successful" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Server error following user'})
+    res.status(500).json({ error: "Server error following user" });
   }
-})
+});
+
+router.post("/unfollowUser", async (req, res) => {
+  const { followerId, followedId } = req.body;
+
+  try {
+    await pool.query(
+      `DELETE FROM follows 
+       WHERE "followerId" = $1 
+       AND "followedId" = $2
+      `,
+      [followerId, followedId]
+    );
+    res.status(200).json({ message: "Unollow successful" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error unfollowing user" });
+  }
+});
 
 // get one user
 router.get("/:userId", checkUserExists, async (req, res) => {
@@ -65,56 +85,67 @@ router.get("/:userId", checkUserExists, async (req, res) => {
 
 // update a user
 router.put("/:userId", checkUserExists, async (req, res) => {
-  // BASIC, WILL CHANGE LATER
   try {
     const userId = req.params.userId;
     const user = req.user;
-    let updates = req.body; // gets all fields to update
+    const email = req.body.email?.toLowerCase();
+    const username = req.body.username?.toLowerCase();
 
-    // Remove undefined values
-    updates = Object.fromEntries(
-      Object.entries(updates).filter(([_, v]) => v !== undefined)
-    );
+    if (!username || !email) {
+      return res.status(400).json({ message: "Missing fields." });
+    }
 
-    // Ensure at least one field is provided
-    if (Object.keys(updates).length === 0) {
+    let emailTaken = false;
+    let usernameTaken = false;
+
+    // check if email is already used
+    try {
+      const emailResult = await pool.query(
+        "SELECT COUNT(*) AS count FROM users WHERE LOWER(email) = LOWER($1) AND id != $2",
+        [email, userId]
+      );
+      emailTaken = parseInt(emailResult.rows[0].count) > 0;
+    } catch (error) {
+      console.log(error.message);
+      return res
+        .status(500)
+        .json({ message: "Database error during email check." });
+    }
+
+    // check if username is already used
+    try {
+      const usernameResult = await pool.query(
+        "SELECT COUNT(*) AS count FROM users WHERE LOWER(username) = LOWER($1) AND id != $2",
+        [username, userId]
+      );
+      usernameTaken = parseInt(usernameResult.rows[0].count) > 0;
+    } catch (error) {
+      console.log(error.message);
+      return res
+        .status(500)
+        .json({ message: "Database error during username check." });
+    }
+
+    if (emailTaken && usernameTaken) {
       return res
         .status(400)
-        .json({ error: "No valid fields provided for update" });
+        .json({ message: "Email and username are already in use." });
+    } else if (emailTaken) {
+      return res.status(400).json({ message: "Email is already in use." });
+    } else if (usernameTaken) {
+      return res.status(400).json({ message: "Username is already in use." });
     }
 
-    // Hash the password if it's provided
-    if ("password" in updates) {
-      const saltRounds = 10;
-      updates.password = await bcrypt.hash(updates.password, saltRounds);
-    }
+    // update values
+    const updateUser = await pool.query(
+      `UPDATE users SET email = $1, username = $2 WHERE id = $3 RETURNING *`,
+      [email, username, userId]
+    );
 
-    // Check if email is already in use (excluding the current user)
-    if ("email" in updates) {
-      const result = await pool.query(
-        "SELECT COUNT(*) AS count FROM users WHERE email = $1 AND id <> $2",
-        [updates.email, userId]
-      );
-
-      if (parseInt(result.rows[0].count) > 0) {
-        return res.status(400).json({ error: "Email is already in use" });
-      }
-    }
-
-    // Dynamically build the SET clause
-    const setClause = Object.keys(updates)
-      .map((key, index) => `"${key}" = $${index + 1}`)
-      .join(", ");
-
-    // Get values for placeholders
-    const values = Object.values(updates);
-    values.push(userId); // Last placeholder for WHERE id = $n
-
-    // Execute query
-    const query = `UPDATE users SET ${setClause} WHERE id = $${values.length} RETURNING *`;
-    const result = await pool.query(query, values);
-
-    res.json({ message: "Profile updated successfully", user: result.rows[0] });
+    res.json({
+      message: "Profile updated successfully",
+      user: updateUser.rows[0],
+    });
   } catch (err) {
     console.error("Error updating user:", err.message);
     return res.status(500).json({ error: "Internal Server Error" });

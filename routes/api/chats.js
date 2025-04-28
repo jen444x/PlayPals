@@ -3,7 +3,47 @@ var router = express.Router();
 const db = require('../../sql/config');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const { readdir } = require('fs');
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const chatId = req.params.chatId;
+    const uploadPath = path.join(__dirname, '../../public/images/chats', chatId);
+
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const extension = path.extname(file.originalname);
+    cb(null, file.fieldname + '-' + uniqueSuffix + extension);
+  }
+});
+
+const upload = multer({ storage: storage });
+
+router.post('/uploadMedia/:chatId', upload.single('media'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded." });
+    }
+
+    const filePath = `images/chats/${req.params.chatId}/${req.file.filename}`;
+
+    res.status(200).json({
+      message: 'Media uploaded successfully',
+      mediaUrl: `${filePath}`,
+    });
+  } catch (err) {
+    console.error("Upload error:", err);
+    res.status(500).json({ message: "Server error during upload." });
+  }
+});
 
 router.get('/:userId', async (req, res) => {
     const { userId } = req.params;
