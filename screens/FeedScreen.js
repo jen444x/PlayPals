@@ -98,9 +98,12 @@ export default function FeedScreen() {
     setFeedData((prevFeed) =>
       prevFeed.map((post) => {
         if (post.id.toString() === postIdStr) {
+          const isLiked = !post.likedByUser;
+          const newLikeCount = isLiked ? post.likeCount + 1 : post.likeCount - 1;
           return {
             ...post,
-            likedByUser: !post.likedByUser,
+            likedByUser: isLiked,
+            likeCount: newLikeCount,
           };
         }
         return post;
@@ -134,7 +137,7 @@ export default function FeedScreen() {
   }, []);
 
   const formatCount = (count, singularWord) => {
-    let formattedCount = count;
+    let formattedCount = Number(count);
   
     if (count >= 1_000_000_000) {
       formattedCount = (count / 1_000_000_000).toFixed(1).replace('.0', '') + 'B';
@@ -144,7 +147,7 @@ export default function FeedScreen() {
       formattedCount = (count / 1000).toFixed(1).replace('.0', '') + 'k';
     }
   
-    return `${formattedCount} ${count === 1 ? singularWord : singularWord + 's'}`;
+    return `${formattedCount} ${formattedCount === 1 ? singularWord : singularWord + 's'}`;
   };
 
   // Use onViewableItemsChanged to update the active index as the user scrolls
@@ -257,6 +260,19 @@ export default function FeedScreen() {
 
         setComments((prev) => [formattedComment, ...prev]);
         setNewComment('');
+        
+        setFeedData((prevFeed) =>
+          prevFeed.map((post) => {
+            if (post.id === selectedPostId) {
+              return {
+                ...post,
+                commentCount: Number(post.commentCount) + 1,
+              };
+            }
+            return post;
+          })
+        );
+
       } else {
         console.warn('Failed to post comment:', data?.error);
       }
@@ -275,6 +291,17 @@ export default function FeedScreen() {
 
       if (response.ok) {
         setComments((prevComments) => prevComments.filter((_, i) => i !== index));
+        setFeedData((prevFeed) =>
+          prevFeed.map((post) => {
+            if (post.id === selectedPostId) {
+              return {
+                ...post,
+                commentCount: Math.max(0, Number(post.commentCount) - 1),
+              };
+            }
+            return post;
+          })
+        );
       } else {
         console.warn('Failed to delete comment');
       }
@@ -332,7 +359,6 @@ export default function FeedScreen() {
           keyboardVerticalOffset={0} // adjust this if needed
         >
           <View style={styles.modalContainer}>
-            {/* Top Bar */}
             <View style={styles.topBar}>
               <Text style={{ width: 40 }}> </Text> 
               <Text style={styles.modalTitle}>Comments</Text>            
