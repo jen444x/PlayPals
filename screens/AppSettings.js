@@ -19,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ThemeContext } from "../ThemeContext"; // adjust the path accordingly
 import HomeScreen from "./HomeScreen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { BASE_URL } from "../config.js";
 
 // Enable LayoutAnimation on Android
 if (
@@ -74,22 +75,19 @@ const AppSettings = () => {
       const token = await AsyncStorage.getItem("token");
       const userId = await AsyncStorage.getItem("userId");
 
-      const response = await fetch(
-        `https://test2.playpals-app.com/api/users/${userId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(`${BASE_URL}api/users/${userId}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       const data = await response.json();
 
       if (response.ok) {
         setUserName(data.username);
-        // setUserProfileImage(data.profileImage);
+        setUserProfileImage(`${BASE_URL}${data.avatar}`);
       } else {
         showToast("Failed to fetch profile");
       }
@@ -235,13 +233,13 @@ const AppSettings = () => {
         }}
         dynamicTextStyle={dynamicTextStyle}
       />
-      <SettingRow
+      {/* <SettingRow
         iconName="notifications"
         label="Enable Notifications"
         value={isNotificationsEnabled}
         onValueChange={(value) => setIsNotificationsEnabled(value)}
         dynamicTextStyle={dynamicTextStyle}
-      />
+      /> */}
 
       {/* Save Settings */}
       <TouchableOpacity

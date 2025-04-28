@@ -17,7 +17,7 @@ import {
   LayoutAnimation,
   UIManager,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeContext } from '../ThemeContext';
 import { BASE_URL } from '../config'; // adjust path if needed
@@ -30,6 +30,8 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 export default function PetProfilesScreen() {
   const navigation = useNavigation();
   const { isDarkMode } = useContext(ThemeContext);
+  const route = useRoute();
+  const { userId } = route.params;
 
   const [petProfiles, setPetProfiles] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -39,7 +41,6 @@ export default function PetProfilesScreen() {
   // Fetch pets from backend
   const fetchPets = async () => {
     try {
-      const userId = await AsyncStorage.getItem('userId');
       if (!userId) {
         console.error('No userId found');
         return;
