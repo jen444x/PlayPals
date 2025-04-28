@@ -62,7 +62,7 @@ export default function FeedScreen() {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [currentUsername, setUsername] = useState('');
-
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchFeed = async () => {
     try {
@@ -81,6 +81,12 @@ export default function FeedScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchFeed(); 
+    setRefreshing(false);
   };
 
   useEffect(() => {
@@ -353,6 +359,8 @@ export default function FeedScreen() {
         showsVerticalScrollIndicator={false}
         onViewableItemsChanged={onViewRef.current}
         viewabilityConfig={viewConfigRef.current}
+        refreshing={refreshing}  
+        onRefresh={onRefresh}
       />
       
       <Modal
