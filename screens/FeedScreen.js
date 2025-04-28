@@ -28,6 +28,8 @@ const dummyFeedData = [
     caption: 'Look at my adorable pup playing in the park!',
     timestamp: '2 hours ago',
     username: 'JohnDoe',
+    likeCount: 1420,
+    commentCount: 76,
   },
   {
     id: '2',
@@ -36,6 +38,8 @@ const dummyFeedData = [
     caption: 'Enjoying a sunny day at the beach!',
     timestamp: '3 hours ago',
     username: 'JaneSmith',
+    likeCount: 1,
+    commentCount: 1,
   },
   // Add more posts as needed.
 ];
@@ -118,6 +122,20 @@ export default function FeedScreen() {
     fetchFeed();
   }, []);
 
+  const formatCount = (count, singularWord) => {
+    let formattedCount = count;
+  
+    if (count >= 1_000_000_000) {
+      formattedCount = (count / 1_000_000_000).toFixed(1).replace('.0', '') + 'B';
+    } else if (count >= 1_000_000) {
+      formattedCount = (count / 1_000_000).toFixed(1).replace('.0', '') + 'M';
+    } else if (count >= 1000) {
+      formattedCount = (count / 1000).toFixed(1).replace('.0', '') + 'k';
+    }
+  
+    return `${formattedCount} ${count === 1 ? singularWord : singularWord + 's'}`;
+  };
+
   // Use onViewableItemsChanged to update the active index as the user scrolls
   const onViewRef = useRef((viewableItems) => {
     if (viewableItems.viewableItems.length > 0) {
@@ -153,6 +171,7 @@ export default function FeedScreen() {
         </TouchableOpacity>
         <Text style={styles.caption}>{item.caption}</Text>
         <Text style={styles.timestamp}>{item.timestamp}</Text>
+        <View style={styles.buttonRow}>
         <TouchableOpacity 
           style={[
             styles.likeButton,
@@ -165,15 +184,22 @@ export default function FeedScreen() {
             {item.likedByUser ? '💔 Unlike' : '❤️ Like'}
           </Text>
         </TouchableOpacity>
+        <Text style={styles.countText}>
+          {formatCount(item.likeCount, 'like')}
+        </Text>
+        </View>
 
-          
+        <View style={styles.buttonRow}>
         <TouchableOpacity 
         style={styles.commentButton}
         onPress={() => openComments(item.id)}
         >
         <Text style={styles.commentButtonText}>💬 Comment</Text>
         </TouchableOpacity>  
-
+        <Text style={styles.countText}>
+          {formatCount(item.commentCount, 'comment')}
+        </Text>
+        </View>
       </View>
     </View>
   );
@@ -237,7 +263,7 @@ export default function FeedScreen() {
   return (
     <View style={styles.container}>
       <FlatList 
-        data={feedData}
+        data={dummyFeedData}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         pagingEnabled
@@ -337,7 +363,7 @@ const styles = StyleSheet.create({
     color: '#7D7D7D',
   },
   likeButton: {
-    marginTop: 10,
+    //marginTop: 10,
     backgroundColor: '#FFB74D',
     paddingVertical: 8,
     paddingHorizontal: 15,
@@ -350,7 +376,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   commentButton: {
-    marginTop: 10,
+    //marginTop: 10,
     backgroundColor: '#64B5F6',
     paddingVertical: 8,
     paddingHorizontal: 15,
@@ -437,6 +463,17 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     tintColor: '#333',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  countText: {
+    marginLeft: 10,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#555',
   },
 
 });
