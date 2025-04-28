@@ -10,7 +10,8 @@ import {
   Modal, 
   TextInput, 
   KeyboardAvoidingView,
-  Platform 
+  Platform,
+  Alert
 } from 'react-native';
 import { Video } from 'expo-av';
 import { useNavigation } from '@react-navigation/native';
@@ -52,12 +53,11 @@ export default function FeedScreen() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [likedPosts, setLikedPosts] = useState(new Set());
   const [disabledLikes, setDisabledLikes] = useState(new Set());
-  
-  
   const [commentModalVisible, setCommentModalVisible] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
+  const [currentUsername, setUsername] = useState('');
 
 
   const fetchFeed = async () => {
@@ -78,6 +78,17 @@ export default function FeedScreen() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const fetchUsername = async () => {
+      const savedUsername = await AsyncStorage.getItem('username');
+      if (savedUsername) {
+        setUsername(savedUsername);
+      }
+    };
+  
+    fetchUsername();
+  }, []);
 
   const likePost = async (postId) => {
     const postIdStr = postId.toString();
@@ -253,6 +264,41 @@ export default function FeedScreen() {
       console.error('Error posting comment:', error);
     }
   };
+
+  const deleteComment = async (item, index) => {
+    try {
+      const response = await fetch(`${BASE_URL}api/posts/deleteComment/${item.id}`, {
+        method: 'DELETE',
+      });
+      
+      console.log('Trying to delete comment:', item);
+
+      if (response.ok) {
+        setComments((prevComments) => prevComments.filter((_, i) => i !== index));
+      } else {
+        console.warn('Failed to delete comment');
+      }
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+    }
+  };
+
+  const handleDeleteComment = (item, index) => {
+    if (item.username !== currentUsername) return; 
+    
+    Alert.alert(
+      'Delete Comment',
+      'Are you sure you want to delete this comment?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', 
+          style: 'destructive', 
+          onPress: () => deleteComment(item, index)
+        },
+      ]
+    );
+  };
   
   const closeComments = () => {
     setCommentModalVisible(false);
@@ -263,7 +309,7 @@ export default function FeedScreen() {
   return (
     <View style={styles.container}>
       <FlatList 
-        data={dummyFeedData}
+        data={feedData}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         pagingEnabled
@@ -301,11 +347,16 @@ export default function FeedScreen() {
             <FlatList 
               data={comments}
               keyExtractor={(item, index) => index.toString()}
-              renderItem={({ item }) => (
+              renderItem={({ item, index }) => (
+              <TouchableOpacity 
+                onLongPress={() => handleDeleteComment(item, index)} 
+                disabled={item.username !== currentUsername}
+              >
                 <View style={styles.commentItem}>
                   <Text style={styles.commentUsername}>{item.username}:</Text>
                   <Text style={styles.commentText}>{item.comment}</Text>
                 </View>
+              </TouchableOpacity>
               )}
             />
             
