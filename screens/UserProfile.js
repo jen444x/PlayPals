@@ -85,7 +85,7 @@ const UserProfile = () => {
         const petData = await petsRes.json();
 
         setOriginalProfile({ ...userData, petProfiles: petData });
-        setProfileImage(userData.profileImage);
+        setProfileImage(userData.avatar);
         setPetProfiles(petData);
       } catch (err) {
         console.error("Error fetching profile or pets:", err);
@@ -108,15 +108,28 @@ const UserProfile = () => {
         showToast("Permission to access media library is required!");
         return;
       }
+
       setIsLoading(true);
+
       let result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 1,
       });
+
       if (!result.canceled) {
-        setProfileImage(result.assets[0].uri);
+        // setProfileImage(result.assets[0].uri);
+        const userId = await AsyncStorage.getItem("userId");
+
+        // Immediately upload the selected image
+        const imageUri = result.assets[0].uri;
+        // await uploadImageToServer(userId, result.assets[0]);
+        const serverImagePath = await uploadImageToServer(
+          userId,
+          result.assets[0]
+        );
+        setProfileImage(serverImagePath);
         showToast("Profile image updated");
       }
     } catch (error) {
@@ -125,6 +138,50 @@ const UserProfile = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const uploadImageToServer = async (userId, imageFile) => {
+    const formData = new FormData();
+    formData.append("avatar", {
+      uri: imageFile.uri,
+      name: imageFile.fileName || "avatar.jpg",
+      type: imageFile.type || "image/jpeg",
+    });
+
+    const response = await fetch(
+      `${BASE_URL}api/profile/${userId}/uploadAvatar`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+    console.log(data);
+    return data.avatar;
+  };
+
+  const getUserImageSource = () => {
+    if (profileImage) {
+      // Check if profileImage is a remote path (starts with "/images")
+      if (profileImage.startsWith("images")) {
+        return { uri: `${BASE_URL}${profileImage}` };
+      }
+
+      // If it's a full URL (like from picker), use it directly
+      if (
+        profileImage.startsWith("file://") ||
+        profileImage.startsWith("http")
+      ) {
+        return { uri: profileImage };
+      }
+    }
+
+    // Default placeholder if no image
+    return require("../assets/avatar.png");
   };
 
   // what happens when you click 'save profile'
@@ -389,7 +446,7 @@ const UserProfile = () => {
                     />
                   ) : profileImage ? (
                     <Image
-                      source={{ uri: profileImage }}
+                      source={getUserImageSource()}
                       style={styles.profileImage}
                     />
                   ) : (
