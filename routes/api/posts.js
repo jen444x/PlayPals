@@ -121,7 +121,17 @@ router.get("/getPosts/:userId", async (req, res) => {
               FROM "postLikes"
               WHERE "postLikes"."postId" = post.id
                 AND "postLikes"."userId" = $1
-            ) AS "likedByUser"
+            ) AS "likedByUser", 
+	    (
+	      SELECT COUNT(*)
+	      FROM "postLikes" 
+	      WHERE "postLikes"."postId" = post.id
+	    ) AS "likeCount",
+            (
+	      SELECT COUNT(*)
+	      FROM "comments" 
+	      WHERE "comments"."postId" = post.id
+	    ) AS "commentCount" 
           FROM post
           JOIN post_media ON post.id = post_media."postId"
           JOIN users ON post."userId" = users.id
