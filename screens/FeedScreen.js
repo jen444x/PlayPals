@@ -18,6 +18,10 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../config.js'; // Adjust path as needed
 import exitIcon from '../assets/reject.png';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
@@ -150,6 +154,10 @@ export default function FeedScreen() {
     return `${formattedCount} ${formattedCount === 1 ? singularWord : singularWord + 's'}`;
   };
 
+  const formatTimestamp = (timestamp) => {
+    return dayjs(timestamp).fromNow();
+  };
+
   // Use onViewableItemsChanged to update the active index as the user scrolls
   const onViewRef = useRef((viewableItems) => {
     if (viewableItems.viewableItems.length > 0) {
@@ -184,7 +192,7 @@ export default function FeedScreen() {
           <Text style={styles.username}>{item.username}</Text>
         </TouchableOpacity>
         <Text style={styles.caption}>{item.caption}</Text>
-        <Text style={styles.timestamp}>{item.timestamp}</Text>
+        <Text style={styles.timestamp}>{formatTimestamp(item.timestamp)}</Text>
         <View style={styles.buttonRow}>
         <TouchableOpacity 
           style={[
