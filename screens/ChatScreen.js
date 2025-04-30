@@ -24,8 +24,9 @@ import Video from "react-native-video";
 import { BASE_URL } from "../config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import mime from "mime";
+import { URL } from "../config";
 
-const host = "wss://test2.playpals-app.com";
+const host = `0wss://${URL}`;
 
 const socket = io(host, {
   transports: ["websocket"],
