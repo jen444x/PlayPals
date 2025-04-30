@@ -350,50 +350,51 @@ export default function ChatScreen() {
         source={require("../assets/petBackground.jpg")}
         style={styles.background}
       >
-        <TouchableWithoutFeedback
-          onPress={() => {
-            if (Platform.OS !== "web") Keyboard.dismiss();
-          }}
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
         >
-
-          <KeyboardAvoidingView
-            style={styles.flex}
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
-          >
-            <View style={styles.chatContainer}>
-              <View style={styles.header}>
-                <Text style={styles.headerTitle}>Chat with {chatUser}</Text>
-              </View>
-              <Text style={{ textAlign: "center", color: "gray" }}>
-                {typingIndicator}
-              </Text>
-              <FlatList
-                ref={flatListRef}
-                data={messages}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <MessageItem item={item} currentUser={currentUser} />
-                )}
-                contentContainerStyle={styles.messagesList}
-                initialNumToRender={10}
-                windowSize={5}
-                onContentSizeChange={() =>
-                  flatListRef.current.scrollToEnd({ animated: true })
-                }
-              />
-              <MessageInput
-                inputMessage={inputMessage}
-                setInputMessage={(text) => {
-                  setInputMessage(text);
-                  handleTyping();
-                }}
-                handleSendMessage={handleSendMessage}
-                handlePickMedia={handlePickMedia}
-              />
+          <View style={styles.chatContainer}>
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>Chat with {chatUser}</Text>
             </View>
-          </KeyboardAvoidingView>
-        </TouchableWithoutFeedback>
+            <Text style={{ textAlign: "center", color: "gray" }}>
+              {typingIndicator}
+            </Text>
+
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <MessageItem item={item} currentUser={currentUser} />
+              )}
+              contentContainerStyle={styles.messagesList}
+              initialNumToRender={10}
+              windowSize={5}
+              // Removed onContentSizeChange
+            />
+
+            <TouchableWithoutFeedback
+              onPress={() => {
+                if (Platform.OS !== "web") Keyboard.dismiss();
+              }}
+            >
+              <View>
+                <MessageInput
+                  inputMessage={inputMessage}
+                  setInputMessage={(text) => {
+                    setInputMessage(text);
+                    handleTyping();
+                  }}
+                  handleSendMessage={handleSendMessage}
+                  handlePickMedia={handlePickMedia}
+                />
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </KeyboardAvoidingView>
       </ImageBackground>
     </SafeAreaView>
   );
