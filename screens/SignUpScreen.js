@@ -133,6 +133,11 @@ export default function SignUpScreen({ navigation }) {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            textContentType="newPassword"
+            autoComplete="off"
+            importantForAutofill="no"
+            autoCorrect={false}
+            autoCapitalize="none"
           />
           <TextInput
             style={styles.input}
@@ -141,6 +146,11 @@ export default function SignUpScreen({ navigation }) {
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
+            textContentType="newPassword"
+            autoComplete="off"
+            importantForAutofill="no"
+            autoCorrect={false}
+            autoCapitalize="none"
           />
 
           <TouchableOpacity
