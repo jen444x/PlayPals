@@ -239,6 +239,7 @@ export default function FeedScreen() {
     try {
       const response = await fetch(`${BASE_URL}api/posts/getComments/${postId}`);
       const data = await response.json();
+      //console.log('Fetched comments:', data);
       setComments(data);
     } catch (error) {
       console.error('Error fetching comments:', error);
@@ -268,8 +269,10 @@ export default function FeedScreen() {
   
       if (response.ok) {
         const formattedComment = {
+          id: data.id,
           username: username || "You",
           comment: data.comment,
+          createdAt: new Date().toISOString(),
         };
 
         setComments((prev) => [formattedComment, ...prev]);
@@ -395,8 +398,15 @@ export default function FeedScreen() {
                 disabled={item.username !== currentUsername}
               >
                 <View style={styles.commentItem}>
-                  <Text style={styles.commentUsername}>{item.username}:</Text>
-                  <Text style={styles.commentText}>{item.comment}</Text>
+                <Text style={styles.commentText}>
+                  <Text style={styles.commentUsername}>{item.username}: </Text>
+                  {item.comment}
+                </Text>
+                {item.createdAt && (
+                  <Text style={styles.commentTimestamp}>
+                    {dayjs(item.createdAt).fromNow()}
+                  </Text>
+                )}
                 </View>
               </TouchableOpacity>
               )}
@@ -567,6 +577,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#555',
+  },
+  commentTimestamp: {
+    fontSize: 11,
+    color: '#999',
   },
 
 });
