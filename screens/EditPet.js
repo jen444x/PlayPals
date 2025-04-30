@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
     View,
     TextInput,
@@ -16,10 +16,13 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from "../config";
+import { ThemeContext } from '../ThemeContext'; // ✅ Added for dark mode
 
 const EditPet = () => {
     const route = useRoute();
     const navigation = useNavigation();
+    const { isDarkMode } = useContext(ThemeContext); // ✅ Access dark mode
+    const styles = getStyles(isDarkMode); // ✅ Use dynamic styles
     const { petId } = route.params;
 
     const [petName, setPetName] = useState('');
@@ -39,7 +42,6 @@ const EditPet = () => {
                 const text = await response.text();
 
                 if (!response.ok) throw new Error('Failed to fetch pet');
-
                 const data = JSON.parse(text);
                 setPetName(data.petName || '');
                 setPetBreed(data.breed || '');
@@ -50,15 +52,12 @@ const EditPet = () => {
                 Alert.alert('Error', 'Failed to load pet details.');
             }
         };
-
         fetchPetDetails();
     }, [petId]);
 
     const handleDateChange = (event, selectedDate) => {
         setShowDatePicker(Platform.OS === 'ios');
-        if (selectedDate) {
-            setPetBirthday(selectedDate);
-        }
+        if (selectedDate) setPetBirthday(selectedDate);
     };
 
     const pickImage = async () => {
@@ -83,37 +82,32 @@ const EditPet = () => {
     const uploadImageToServer = async (userId, petId, imageFile) => {
         const formData = new FormData();
         formData.append('avatar', {
-          uri: imageFile.uri,
-          name: imageFile.fileName || 'avatar.jpg',
-          type: imageFile.type || 'image/jpeg',
+            uri: imageFile.uri,
+            name: imageFile.fileName || 'avatar.jpg',
+            type: imageFile.type || 'image/jpeg',
         });
-      
+
         const response = await fetch(`${BASE_URL}api/pets/${userId}/${petId}/uploadAvatar`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-          body: formData,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            body: formData,
         });
-      
+
         const data = await response.json();
         console.log(data);
     };
 
     const getPetImageSource = () => {
         if (petImage) {
-          // Check if petImage is a remote path (starts with "/images")
-          if (petImage.startsWith('images')) {
-            return { uri: `${BASE_URL}${petImage}` };
-          }
-      
-          // If it's a full URL (like from picker), use it directly
-          if (petImage.startsWith('file://') || petImage.startsWith('http')) {
-            return { uri: petImage };
-          }
+            if (petImage.startsWith('images')) {
+                return { uri: `${BASE_URL}${petImage}` };
+            }
+            if (petImage.startsWith('file://') || petImage.startsWith('http')) {
+                return { uri: petImage };
+            }
         }
-      
-        // Default placeholder if no image
         return require('../assets/pet-placeholder.png');
     };
 
@@ -177,14 +171,14 @@ const EditPet = () => {
                     placeholder="Pet Name"
                     value={petName}
                     onChangeText={setPetName}
-                    placeholderTextColor="#8B7E66"
+                    placeholderTextColor={isDarkMode ? "#AAA" : "#8B7E66"}
                 />
                 <TextInput
                     style={styles.input}
                     placeholder="Breed"
                     value={petBreed}
                     onChangeText={setPetBreed}
-                    placeholderTextColor="#8B7E66"
+                    placeholderTextColor={isDarkMode ? "#AAA" : "#8B7E66"}
                 />
 
                 <View style={styles.dateButton}>
@@ -209,11 +203,7 @@ const EditPet = () => {
                     <Button title="Upload Pet Picture" onPress={pickImage} color="#FF6F61" />
                 </View>
 
-                {petImage ? (
-                    <Image source={getPetImageSource()} style={styles.image} />
-                ) : (
-                    <Image source={require('../assets/pet-placeholder.png')} style={styles.image} />
-                )}
+                <Image source={getPetImageSource()} style={styles.image} />
 
                 {isLoading ? (
                     <ActivityIndicator size="large" color="#6D4C41" style={{ marginVertical: 20 }} />
@@ -227,14 +217,14 @@ const EditPet = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (isDarkMode) => StyleSheet.create({
     background: {
         flex: 1,
         resizeMode: 'cover',
     },
     container: {
         flex: 1,
-        backgroundColor: 'rgba(255, 255, 255, 0.85)',
+        backgroundColor: isDarkMode ? 'rgba(0,0,0,0.6)' : 'rgba(255, 255, 255, 0.85)',
         margin: 20,
         borderRadius: 15,
         padding: 20,
@@ -244,16 +234,17 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 30,
         fontWeight: 'bold',
-        color: '#4A4A4A',
+        color: isDarkMode ? '#FAFAFA' : '#4A4A4A',
         marginBottom: 20,
     },
     input: {
         width: '100%',
         padding: 10,
         borderRadius: 10,
-        backgroundColor: '#FFF',
+        backgroundColor: isDarkMode ? '#2C2C2C' : '#FFF',
+        color: isDarkMode ? '#FFF' : '#000',
         marginBottom: 15,
-        borderColor: '#6D4C41',
+        borderColor: isDarkMode ? '#888' : '#6D4C41',
         borderWidth: 1,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
@@ -267,7 +258,7 @@ const styles = StyleSheet.create({
     birthdayText: {
         marginVertical: 10,
         fontSize: 16,
-        color: '#4A4A4A',
+        color: isDarkMode ? '#DDD' : '#4A4A4A',
     },
     imageButton: {
         width: '100%',
@@ -283,7 +274,6 @@ const styles = StyleSheet.create({
         width: '100%',
         marginTop: 10,
     },
-    
     errorText: {
         color: '#D9534F',
         marginBottom: 10,

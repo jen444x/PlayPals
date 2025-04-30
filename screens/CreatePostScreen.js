@@ -1,27 +1,30 @@
 import * as ImagePicker from 'expo-image-picker';
-import { useState, useEffect } from 'react';
-import { 
-  View, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Image, 
-  Text, 
-  Alert, 
-  TextInput, 
-  Keyboard, 
-  KeyboardAvoidingView, 
-  TouchableWithoutFeedback, 
-  Dimensions, 
+import { useState, useEffect, useContext } from 'react';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Text,
+  Alert,
+  TextInput,
+  Keyboard,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Dimensions,
   ActivityIndicator,
-  Platform
+  Platform,
 } from 'react-native';
 import { Video } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import mime from 'mime';
 import { BASE_URL } from '../config.js';
+import { ThemeContext } from '../ThemeContext';
 
 export default function PersonalFeedScreen() {
+  const { isDarkMode } = useContext(ThemeContext);
+  const styles = getStyles(isDarkMode);
   const [media, setMedia] = useState(null);
   const [caption, setCaption] = useState('');
   const [videoDimensions, setVideoDimensions] = useState({ width: 400, height: 400 });
@@ -29,7 +32,6 @@ export default function PersonalFeedScreen() {
   const [errorMsg, setErrorMsg] = useState(null);
   const screenWidth = Dimensions.get('window').width;
 
-  // Request permission to access media library on mount
   useEffect(() => {
     (async () => {
       await requestPermission();
@@ -40,11 +42,11 @@ export default function PersonalFeedScreen() {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert("Permission Required", "Please allow access to your photo library to select media.");
+        Alert.alert('Permission Required', 'Please allow access to your photo library to select media.');
       }
     } catch (error) {
-      console.error("Permission request error:", error);
-      setErrorMsg("Error requesting media permissions.");
+      console.error('Permission request error:', error);
+      setErrorMsg('Error requesting media permissions.');
     }
   };
 
@@ -52,7 +54,7 @@ export default function PersonalFeedScreen() {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert("Permission Denied", "You need to enable access to your photos in Settings.");
+        Alert.alert('Permission Denied', 'You need to enable access to your photos in Settings.');
         return;
       }
       let result = await ImagePicker.launchImageLibraryAsync({
@@ -72,9 +74,9 @@ export default function PersonalFeedScreen() {
         setErrorMsg(null);
       }
     } catch (error) {
-      console.error("Error opening image picker:", error);
-      Alert.alert("Error", "There was an error selecting the media.");
-      setErrorMsg("Media selection failed. Please try again.");
+      console.error('Error opening image picker:', error);
+      Alert.alert('Error', 'There was an error selecting the media.');
+      setErrorMsg('Media selection failed. Please try again.');
     }
   };
 
@@ -93,15 +95,15 @@ export default function PersonalFeedScreen() {
       if (Platform.OS == 'web') {
         const response = await fetch(uri);
         const blob = await response.blob();
-  
         formData.append('media', blob, fileName);
       } else {
         formData.append('media', {
           uri,
           name: fileName,
-          type: fileType
-        })
+          type: fileType,
+        });
       }
+
       formData.append('caption', caption);
       formData.append('mediaType', media.type);
 
@@ -115,44 +117,36 @@ export default function PersonalFeedScreen() {
 
       const result = await response.json();
 
-      console.log("Uploading media with caption:", caption);
-      // Simulate a network request
       if (response.ok) {
-        Alert.alert("Success", "Your media was uploaded successfully!");
+        Alert.alert('Success', 'Your media was uploaded successfully!');
         setMedia(null);
         setCaption('');
         setErrorMsg(null);
       } else {
-        throw new Error(result.message || 'Upload Failed')
+        throw new Error(result.message || 'Upload Failed');
       }
     } catch (error) {
-      console.error("Upload error:", error);
-      Alert.alert("Upload Failed", "There was an error uploading your media.");
-      setErrorMsg("Upload failed. Please try again.");
+      console.error('Upload error:', error);
+      Alert.alert('Upload Failed', 'There was an error uploading your media.');
+      setErrorMsg('Upload failed. Please try again.');
     } finally {
       setIsUploading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
-      <TouchableWithoutFeedback
-        onPress={() => {
-          if (Platform.OS !== "web") Keyboard.dismiss();
-        }}
-      >
-
+      <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
         <View style={styles.innerContainer}>
           {errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
 
-          {/* If no media is selected, display the enhanced pet-themed placeholder */}
           {!media && (
             <View style={styles.placeholderCard}>
-              <Image 
+              <Image
                 source={require('../assets/pet_welcome.png')}
                 style={styles.placeholderImage}
                 resizeMode="contain"
@@ -161,9 +155,9 @@ export default function PersonalFeedScreen() {
               <Text style={styles.placeholderText}>
                 Share your pet’s cutest moments and heartwarming adventures!
               </Text>
-              <TouchableOpacity 
-                activeOpacity={0.8} 
-                style={styles.selectMediaButton} 
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.selectMediaButton}
                 onPress={handleSelectImagePress}
               >
                 <Text style={styles.buttonText}>Select Media</Text>
@@ -171,7 +165,6 @@ export default function PersonalFeedScreen() {
             </View>
           )}
 
-          {/* Once media is selected, display the media preview and caption input */}
           {media && (
             <>
               {media.type === 'image' && (
@@ -203,40 +196,38 @@ export default function PersonalFeedScreen() {
                     }
                   }}
                   onError={(e) => {
-                    console.error("Video playback error:", e);
-                    Alert.alert("Video Error", "There was an error displaying the video.");
+                    console.error('Video playback error:', e);
+                    Alert.alert('Video Error', 'There was an error displaying the video.');
                   }}
                 />
               )}
               <TextInput
                 style={styles.captionInput}
                 placeholder="Enter a caption (max 150 characters)..."
-                placeholderTextColor="#7D7D7D"
+                placeholderTextColor={isDarkMode ? '#AAA' : '#7D7D7D'}
                 value={caption}
                 onChangeText={(text) => {
-                  if (text.length <= 150) {
-                    setCaption(text);
-                  }
+                  if (text.length <= 150) setCaption(text);
                 }}
                 keyboardType="default"
                 multiline
                 autoCorrect
               />
               <View style={styles.buttonContainer}>
-                <TouchableOpacity 
-                  activeOpacity={0.8} 
-                  style={styles.button} 
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={styles.button}
                   onPress={() => {
-                    setMedia(null); 
+                    setMedia(null);
                     setCaption('');
                     setErrorMsg(null);
                   }}
                 >
                   <Text style={styles.buttonText}>Delete Media</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  activeOpacity={0.8} 
-                  style={styles.button} 
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={styles.button}
                   onPress={handleUploadMedia}
                   disabled={isUploading}
                 >
@@ -255,10 +246,10 @@ export default function PersonalFeedScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isDarkMode) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF8E1',
+    backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF8E1',
   },
   innerContainer: {
     flex: 1,
@@ -269,7 +260,7 @@ const styles = StyleSheet.create({
   placeholderCard: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: '#FFFDE7',
+    backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFDE7',
     borderRadius: 20,
     padding: 25,
     alignItems: 'center',
@@ -293,7 +284,7 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     fontSize: 16,
-    color: '#424242',
+    color: isDarkMode ? '#EEE' : '#424242',
     textAlign: 'center',
     marginBottom: 25,
     paddingHorizontal: 10,
@@ -326,10 +317,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 10,
     marginBottom: 15,
-    backgroundColor: '#FFFDE7',
-    fontFamily: Platform.OS === 'ios' ? 'Helvetica' : 'Roboto',
+    backgroundColor: isDarkMode ? '#333' : '#FFFDE7',
     fontSize: 16,
-    color: '#424242',
+    color: isDarkMode ? '#FFF' : '#424242',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -354,10 +344,9 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: Platform.OS === 'ios' ? 'Helvetica-Bold' : 'Roboto-Bold',
   },
   errorText: {
-    color: 'red',
+    color: '#FF6B6B',
     marginBottom: 10,
     textAlign: 'center',
   },

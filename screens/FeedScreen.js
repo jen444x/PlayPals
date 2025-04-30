@@ -1,14 +1,14 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { 
-  View, 
-  FlatList, 
-  StyleSheet, 
-  Image, 
-  Text, 
-  Dimensions, 
+import React, { useState, useRef, useCallback, useEffect, useContext } from 'react';
+import {
+  View,
+  FlatList,
+  StyleSheet,
+  Image,
+  Text,
+  Dimensions,
   TouchableOpacity,
-  Modal, 
-  TextInput, 
+  Modal,
+  TextInput,
   KeyboardAvoidingView,
   Platform,
   Alert
@@ -16,42 +16,21 @@ import {
 import { Video } from 'expo-av';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BASE_URL } from '../config.js'; // Adjust path as needed
+import { BASE_URL } from '../config.js';
 import exitIcon from '../assets/reject.png';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { ThemeContext } from '../ThemeContext'; // Adjust path if needed
 
 dayjs.extend(relativeTime);
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
-const dummyFeedData = [
-  {
-    id: '1',
-    type: 'image',
-    uri: require('../assets/post1.jpg'), // Replace with your local image asset
-    caption: 'Look at my adorable pup playing in the park!',
-    timestamp: '2 hours ago',
-    username: 'JohnDoe',
-    likeCount: 1420,
-    commentCount: 76,
-  },
-  {
-    id: '2',
-    type: 'video',
-    uri: require('../assets/myVideo.mp4'),
-    caption: 'Enjoying a sunny day at the beach!',
-    timestamp: '3 hours ago',
-    username: 'JaneSmith',
-    likeCount: 1,
-    commentCount: 1,
-  },
-  // Add more posts as needed.
-];
-
 export default function FeedScreen() {
-  console.log("BAse URL" + BASE_URL)
   const navigation = useNavigation();
+  const { isDarkMode } = useContext(ThemeContext);
+  const styles = createStyles(isDarkMode);
+
   const [feedData, setFeedData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -70,11 +49,7 @@ export default function FeedScreen() {
       const response = await fetch(`${BASE_URL}api/posts/getPosts/${userId}`);
       const data = await response.json();
       setFeedData(data);
-
-      const likedPostIds = data
-      .filter(post => post.likedByUser)
-      .map(post => post.id.toString());
-
+      const likedPostIds = data.filter(post => post.likedByUser).map(post => post.id.toString());
       setLikedPosts(new Set(likedPostIds));
     } catch (error) {
       console.error('Error fetching feed:', error);
@@ -85,36 +60,25 @@ export default function FeedScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchFeed(); 
+    await fetchFeed();
     setRefreshing(false);
   };
 
   useEffect(() => {
-    const fetchUsername = async () => {
-      const savedUsername = await AsyncStorage.getItem('username');
-      if (savedUsername) {
-        setUsername(savedUsername);
-      }
-    };
-  
-    fetchUsername();
+    fetchFeed();
+    AsyncStorage.getItem('username').then(setUsername);
   }, []);
 
   const likePost = async (postId) => {
     const postIdStr = postId.toString();
+    setDisabledLikes(prev => new Set(prev).add(postIdStr));
 
-    setDisabledLikes((prev) => new Set(prev).add(postIdStr));
-
-    setFeedData((prevFeed) =>
-      prevFeed.map((post) => {
+    setFeedData(prev =>
+      prev.map(post => {
         if (post.id.toString() === postIdStr) {
           const isLiked = !post.likedByUser;
           const newLikeCount = isLiked ? Number(post.likeCount) + 1 : Number(post.likeCount) - 1;
-          return {
-            ...post,
-            likedByUser: isLiked,
-            likeCount: Number(newLikeCount),
-          };
+          return { ...post, likedByUser: isLiked, likeCount: newLikeCount };
         }
         return post;
       })
@@ -124,9 +88,7 @@ export default function FeedScreen() {
       const userId = await AsyncStorage.getItem('userId');
       await fetch(`${BASE_URL}/api/posts/likePost`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ postId, userId }),
       });
     } catch (error) {
@@ -134,7 +96,7 @@ export default function FeedScreen() {
     }
 
     setTimeout(() => {
-      setDisabledLikes((prev) => {
+      setDisabledLikes(prev => {
         const updated = new Set(prev);
         updated.delete(postIdStr);
         return updated;
@@ -142,32 +104,18 @@ export default function FeedScreen() {
     }, 3000);
   };
 
-  useEffect(() => {
-    fetchFeed();
-  }, []);
-
-  const formatCount = (count, singularWord) => {
-    let formattedCount = Number(count);
-  
-    if (count >= 1_000_000_000) {
-      formattedCount = (count / 1_000_000_000).toFixed(1).replace('.0', '') + 'B';
-    } else if (count >= 1_000_000) {
-      formattedCount = (count / 1_000_000).toFixed(1).replace('.0', '') + 'M';
-    } else if (count >= 1000) {
-      formattedCount = (count / 1000).toFixed(1).replace('.0', '') + 'k';
-    }
-  
-    return `${formattedCount} ${formattedCount === 1 ? singularWord : singularWord + 's'}`;
+  const formatCount = (count, singular) => {
+    if (count >= 1_000_000_000) return `${(count / 1e9).toFixed(1).replace('.0', '')}B ${singular}s`;
+    if (count >= 1_000_000) return `${(count / 1e6).toFixed(1).replace('.0', '')}M ${singular}s`;
+    if (count >= 1000) return `${(count / 1e3).toFixed(1).replace('.0', '')}k ${singular}s`;
+    return `${count} ${count === 1 ? singular : singular + 's'}`;
   };
 
-  const formatTimestamp = (timestamp) => {
-    return dayjs(timestamp).fromNow();
-  };
+  const formatTimestamp = (timestamp) => dayjs(timestamp).fromNow();
 
-  // Use onViewableItemsChanged to update the active index as the user scrolls
-  const onViewRef = useRef((viewableItems) => {
-    if (viewableItems.viewableItems.length > 0) {
-      setActiveIndex(viewableItems.viewableItems[0].index);
+  const onViewRef = useRef(({ viewableItems }) => {
+    if (viewableItems.length > 0) {
+      setActiveIndex(viewableItems[0].index);
     }
   });
   const viewConfigRef = useRef({ viewAreaCoveragePercentThreshold: 80 });
@@ -175,58 +123,43 @@ export default function FeedScreen() {
   const renderItem = ({ item, index }) => (
     <View style={[styles.card, { height: screenHeight }]}>
       {item.type === 'image' && (
-        <Image 
-          source={{ uri: `${BASE_URL}${item.uri}` }} 
-          style={styles.media}
-          resizeMode="cover"
-        />
+        <Image source={{ uri: `${BASE_URL}${item.uri}` }} style={styles.media} resizeMode="cover" />
       )}
       {item.type === 'video' && (
-        <Video 
+        <Video
           source={typeof item.uri === 'number' ? item.uri : { uri: item.uri }}
           style={styles.media}
           useNativeControls
           resizeMode="cover"
           isLooping
-          // Only play the video if this item is currently visible
           shouldPlay={activeIndex === index}
         />
       )}
       <View style={styles.postDetails}>
-        {/* Clickable username navigates to PublicProfile */}
         <TouchableOpacity onPress={() => navigation.navigate('PublicProfile', { userId: item.userId })}>
           <Text style={styles.username}>{item.username}</Text>
         </TouchableOpacity>
         <Text style={styles.caption}>{item.caption}</Text>
         <Text style={styles.timestamp}>{formatTimestamp(item.timestamp)}</Text>
+
         <View style={styles.buttonRow}>
-        <TouchableOpacity 
-          style={[
-            styles.likeButton,
-            item.likedByUser && { backgroundColor: '#E91E63' },
-          ]}
-          onPress={() => likePost(item.id)}
-          disabled={disabledLikes.has(item.id.toString())}
-        >
-          <Text style={styles.likeButtonText}>
-            {item.likedByUser ? '💔 Unlike' : '❤️ Like'}
-          </Text>
-        </TouchableOpacity>
-        <Text style={styles.countText}>
-          {formatCount(item.likeCount, 'like')}
-        </Text>
+          <TouchableOpacity
+            style={[styles.likeButton, item.likedByUser && { backgroundColor: '#E91E63' }]}
+            onPress={() => likePost(item.id)}
+            disabled={disabledLikes.has(item.id.toString())}
+          >
+            <Text style={styles.likeButtonText}>
+              {item.likedByUser ? '💔 Unlike' : '❤️ Like'}
+            </Text>
+          </TouchableOpacity>
+          <Text style={styles.countText}>{formatCount(item.likeCount, 'like')}</Text>
         </View>
 
         <View style={styles.buttonRow}>
-        <TouchableOpacity 
-        style={styles.commentButton}
-        onPress={() => openComments(item.id)}
-        >
-        <Text style={styles.commentButtonText}>💬 Comment</Text>
-        </TouchableOpacity>  
-        <Text style={styles.countText}>
-          {formatCount(item.commentCount, 'comment')}
-        </Text>
+          <TouchableOpacity style={styles.commentButton} onPress={() => openComments(item.id)}>
+            <Text style={styles.commentButtonText}>💬 Comment</Text>
+          </TouchableOpacity>
+          <Text style={styles.countText}>{formatCount(item.commentCount, 'comment')}</Text>
         </View>
       </View>
     </View>
@@ -235,63 +168,44 @@ export default function FeedScreen() {
   const openComments = async (postId) => {
     setSelectedPostId(postId);
     setCommentModalVisible(true);
-    // Dummy comments
     try {
       const response = await fetch(`${BASE_URL}api/posts/getComments/${postId}`);
       const data = await response.json();
-      //console.log('Fetched comments:', data);
       setComments(data);
     } catch (error) {
       console.error('Error fetching comments:', error);
       setComments([]);
     }
   };
-  
+
   const postComment = async () => {
-    if (newComment.trim() === '') return;
-  
+    if (!newComment.trim()) return;
     try {
       const userId = await AsyncStorage.getItem('userId');
       const username = await AsyncStorage.getItem('username');
       const response = await fetch(`${BASE_URL}api/posts/addComment`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          postId: selectedPostId,
-          userId,
-          comment: newComment,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: selectedPostId, userId, comment: newComment }),
       });
-  
+
       const data = await response.json();
-  
       if (response.ok) {
-        const formattedComment = {
+        const newEntry = {
           id: data.id,
-          username: username || "You",
+          username: username || 'You',
           comment: data.comment,
           createdAt: new Date().toISOString(),
         };
-
-        setComments((prev) => [formattedComment, ...prev]);
+        setComments(prev => [newEntry, ...prev]);
         setNewComment('');
-        
-        setFeedData((prevFeed) =>
-          prevFeed.map((post) => {
-            if (post.id === selectedPostId) {
-              return {
-                ...post,
-                commentCount: Number(post.commentCount) + 1,
-              };
-            }
-            return post;
-          })
+        setFeedData(prev =>
+          prev.map(post =>
+            post.id === selectedPostId
+              ? { ...post, commentCount: Number(post.commentCount) + 1 }
+              : post
+          )
         );
-
-      } else {
-        console.warn('Failed to post comment:', data?.error);
       }
     } catch (error) {
       console.error('Error posting comment:', error);
@@ -303,24 +217,16 @@ export default function FeedScreen() {
       const response = await fetch(`${BASE_URL}api/posts/deleteComment/${item.id}`, {
         method: 'DELETE',
       });
-      
-      console.log('Trying to delete comment:', item);
 
       if (response.ok) {
-        setComments((prevComments) => prevComments.filter((_, i) => i !== index));
-        setFeedData((prevFeed) =>
-          prevFeed.map((post) => {
-            if (post.id === selectedPostId) {
-              return {
-                ...post,
-                commentCount: Math.max(0, Number(post.commentCount) - 1),
-              };
-            }
-            return post;
-          })
+        setComments(prev => prev.filter((_, i) => i !== index));
+        setFeedData(prev =>
+          prev.map(post =>
+            post.id === selectedPostId
+              ? { ...post, commentCount: Math.max(0, Number(post.commentCount) - 1) }
+              : post
+          )
         );
-      } else {
-        console.warn('Failed to delete comment');
       }
     } catch (error) {
       console.error('Error deleting comment:', error);
@@ -328,22 +234,17 @@ export default function FeedScreen() {
   };
 
   const handleDeleteComment = (item, index) => {
-    if (item.username !== currentUsername) return; 
-    
+    if (item.username !== currentUsername) return;
     Alert.alert(
       'Delete Comment',
       'Are you sure you want to delete this comment?',
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete', 
-          style: 'destructive', 
-          onPress: () => deleteComment(item, index)
-        },
+        { text: 'Delete', style: 'destructive', onPress: () => deleteComment(item, index) },
       ]
     );
   };
-  
+
   const closeComments = () => {
     setCommentModalVisible(false);
     setSelectedPostId(null);
@@ -352,9 +253,9 @@ export default function FeedScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList 
+      <FlatList
         data={feedData}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem}
         pagingEnabled
         snapToInterval={screenHeight}
@@ -362,10 +263,10 @@ export default function FeedScreen() {
         showsVerticalScrollIndicator={false}
         onViewableItemsChanged={onViewRef.current}
         viewabilityConfig={viewConfigRef.current}
-        refreshing={refreshing}  
+        refreshing={refreshing}
         onRefresh={onRefresh}
       />
-      
+
       <Modal
         animationType="slide"
         transparent={true}
@@ -375,53 +276,45 @@ export default function FeedScreen() {
         <KeyboardAvoidingView
           style={styles.modalBackground}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={0} // adjust this if needed
+          keyboardVerticalOffset={0}
         >
           <View style={styles.modalContainer}>
             <View style={styles.topBar}>
-              <Text style={{ width: 40 }}> </Text> 
-              <Text style={styles.modalTitle}>Comments</Text>            
+              <Text style={{ width: 40 }} />
+              <Text style={styles.modalTitle}>Comments</Text>
               <TouchableOpacity onPress={closeComments} style={styles.closeButtonContainer}>
-                <Image 
-                  source={exitIcon} 
-                  style={styles.exitIcon} 
-                />
+                <Image source={exitIcon} style={styles.exitIcon} />
               </TouchableOpacity>
             </View>
 
-            <FlatList 
+            <FlatList
               data={comments}
               keyExtractor={(item, index) => index.toString()}
               renderItem={({ item, index }) => (
-              <TouchableOpacity 
-                onLongPress={() => handleDeleteComment(item, index)} 
-                disabled={item.username !== currentUsername}
-              >
-              <View style={styles.commentItem}>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      closeComments();
-                      navigation.navigate('PublicProfile', { userId: item.userId });
-                    }}
-                  >
-                    <Text style={styles.commentUsername}>{item.username}</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.commentText}>: {item.comment}</Text>
-                </View>
-
-                {item.createdAt && (
-                  <Text style={styles.commentTimestamp}>
-                    {dayjs(item.createdAt).fromNow()}
-                  </Text>
-                )}
-              </View>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  onLongPress={() => handleDeleteComment(item, index)}
+                  disabled={item.username !== currentUsername}
+                >
+                  <View style={styles.commentItem}>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          closeComments();
+                          navigation.navigate('PublicProfile', { userId: item.userId });
+                        }}
+                      >
+                        <Text style={styles.commentUsername}>{item.username}</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.commentText}>: {item.comment}</Text>
+                    </View>
+                    {item.createdAt && <Text style={styles.commentTimestamp}>{dayjs(item.createdAt).fromNow()}</Text>}
+                  </View>
+                </TouchableOpacity>
               )}
             />
-            
+
             <View style={styles.commentInputContainer}>
-              <TextInput 
+              <TextInput
                 style={styles.commentInput}
                 placeholder="Add a comment..."
                 placeholderTextColor="#999"
@@ -439,14 +332,14 @@ export default function FeedScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (isDarkMode) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF8E1', // Soft cream background
+    backgroundColor: isDarkMode ? '#121212' : '#FFF8E1',// Soft cream background
   },
   card: {
     width: screenWidth,
-    backgroundColor: '#FFFDE7',
+    backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFDE7',
     overflow: 'hidden',
   },
   media: {
@@ -455,23 +348,23 @@ const styles = StyleSheet.create({
   },
   postDetails: {
     padding: 15,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: isDarkMode ? '#1E1E1E' : 'rgba(255, 255, 255, 0.9)',
   },
   username: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#007AFF', // Blue color for links
+    color: isDarkMode ? '#90CAF9' : '#007AFF',
     marginBottom: 5,
   },
   caption: {
     fontSize: 16,
-    color: '#424242',
+    color: isDarkMode ? '#E0E0E0' : '#424242',
     fontWeight: '600',
     marginBottom: 5,
   },
   timestamp: {
     fontSize: 12,
-    color: '#7D7D7D',
+    color: isDarkMode ? '#B0B0B0' : '#7D7D7D',
   },
   likeButton: {
     //marginTop: 10,
@@ -506,7 +399,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     height: '70%',
-    backgroundColor: '#FFF',
+    backgroundColor: isDarkMode ? '#1E1E1E' : '#FFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -518,10 +411,11 @@ const styles = StyleSheet.create({
   commentUsername: {
     fontWeight: 'bold',
     fontSize: 14,
+    color: isDarkMode ? '#FFF' : '#000',
   },
   commentText: {
     fontSize: 14,
-    color: '#333',
+    color: isDarkMode ? '#CCC' : '#333',
   },
   commentInputContainer: {
     flexDirection: 'row',
@@ -531,11 +425,12 @@ const styles = StyleSheet.create({
   commentInput: {
     flex: 1,
     height: 40,
-    borderColor: '#ccc',
+    borderColor: isDarkMode ? '#555' : '#ccc',
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 15,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: isDarkMode ? '#2C2C2C' : '#f9f9f9',
+    color: isDarkMode ? '#FFF' : '#000',
   },
   postCommentButton: {
     marginLeft: 10,
@@ -552,7 +447,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFF',
+    backgroundColor: isDarkMode ? '#1E1E1E' : '#FFF',
     paddingVertical: 0,
     paddingHorizontal: 0,
     borderTopLeftRadius: 20,
@@ -562,7 +457,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: isDarkMode ? '#FFF' : '#333',
   },
   closeButtonContainer: {
     width: 40,
@@ -573,7 +468,7 @@ const styles = StyleSheet.create({
   exitIcon: {
     width: 20,
     height: 20,
-    tintColor: '#333',
+    tintColor: isDarkMode ? '#FFF' : '#333',
   },
   buttonRow: {
     flexDirection: 'row',
@@ -588,7 +483,7 @@ const styles = StyleSheet.create({
   },
   commentTimestamp: {
     fontSize: 11,
-    color: '#999',
+    color: isDarkMode ? '#999' : '#999',
   },
 
 });
