@@ -109,11 +109,11 @@ export default function FeedScreen() {
       prevFeed.map((post) => {
         if (post.id.toString() === postIdStr) {
           const isLiked = !post.likedByUser;
-          const newLikeCount = isLiked ? post.likeCount + 1 : post.likeCount - 1;
+          const newLikeCount = isLiked ? Number(post.likeCount) + 1 : Number(post.likeCount) - 1;
           return {
             ...post,
             likedByUser: isLiked,
-            likeCount: newLikeCount,
+            likeCount: Number(newLikeCount),
           };
         }
         return post;
