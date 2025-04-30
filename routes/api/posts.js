@@ -105,43 +105,82 @@ router.post(
 
 router.get("/getPosts/:userId", async (req, res) => {
   const { userId } = req.params;
+  const FEED_POST_LIM = 10;
 
   try {
-    const posts = await db.query(
+    const followedPosts = await db.query(
       `SELECT 
-            post.id,
-            post.body AS caption,
-            post."userId",
-            post.created_at AS timestamp,
-            post_media."imageUrl" AS uri,
-            post_media."media_type" AS type,
-            users.username,
-            EXISTS (
-              SELECT 1
-              FROM "postLikes"
-              WHERE "postLikes"."postId" = post.id
-                AND "postLikes"."userId" = $1
-            ) AS "likedByUser", 
-	    (
-	      SELECT COUNT(*)
-	      FROM "postLikes" 
-	      WHERE "postLikes"."postId" = post.id
-	    ) AS "likeCount",
-            (
-	      SELECT COUNT(*)
-	      FROM "comments" 
-	      WHERE "comments"."postId" = post.id
-	    ) AS "commentCount" 
-          FROM post
-          JOIN post_media ON post.id = post_media."postId"
-          JOIN users ON post."userId" = users.id
-          JOIN follows ON follows."followedId" = post."userId"
-          WHERE follows."followerId" = $1
-          ORDER BY post.created_at DESC
-          `,
-      [userId]
+        post.id,
+        post.body AS caption,
+        post."userId",
+        post.created_at AS timestamp,
+        post_media."imageUrl" AS uri,
+        post_media."media_type" AS type,
+        users.username,
+        EXISTS (
+          SELECT 1 FROM "postLikes"
+          WHERE "postLikes"."postId" = post.id
+          AND "postLikes"."userId" = $1
+        ) AS "likedByUser",
+        (
+          SELECT COUNT(*) FROM "postLikes"
+          WHERE "postLikes"."postId" = post.id
+        ) AS "likeCount",
+        (
+          SELECT COUNT(*) FROM "comments"
+          WHERE "comments"."postId" = post.id
+        ) AS "commentCount"
+      FROM post
+      JOIN post_media ON post.id = post_media."postId"
+      JOIN users ON post."userId" = users.id
+      JOIN follows ON follows."followedId" = post."userId"
+      WHERE follows."followerId" = $1
+      ORDER BY post.created_at DESC
+      LIMIT $2`,
+      [userId, FEED_POST_LIM]
     );
-    res.status(200).json(posts.rows);
+
+    const followed = followedPosts.rows;
+    const remaining = FEED_POST_LIM - followed.length;
+    let fillerPosts = [];
+
+    if (remaining > 0) {
+      const fillerQuery = await db.query(
+        `SELECT 
+          post.id,
+          post.body AS caption,
+          post."userId",
+          post.created_at AS timestamp,
+          post_media."imageUrl" AS uri,
+          post_media."media_type" AS type,
+          users.username,
+          FALSE AS "likedByUser",
+          (
+            SELECT COUNT(*) FROM "postLikes"
+            WHERE "postLikes"."postId" = post.id
+          ) AS "likeCount",
+          (
+            SELECT COUNT(*) FROM "comments"
+            WHERE "comments"."postId" = post.id
+          ) AS "commentCount"
+        FROM post
+        JOIN post_media ON post.id = post_media."postId"
+        JOIN users ON post."userId" = users.id
+        WHERE post."userId" != $1
+          AND post."userId" NOT IN (
+            SELECT "followedId" FROM follows WHERE "followerId" = $1
+          )
+        ORDER BY "likeCount" DESC, post.created_at DESC
+        LIMIT $2`,
+        [userId, remaining]
+      );
+
+      fillerPosts = fillerQuery.rows;
+    }
+
+    const fullFeed = [...followed, ...fillerPosts];
+
+    res.status(200).json(fullFeed);
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ error: "Server error while fetching feed" });
@@ -202,11 +241,11 @@ router.get("/getComments/:postId", async (req, res) => {
 
   try {
     const result = await db.query(
-      `SELECT c.id, c.comment, c."createdAt", u.username
+      `SELECT c.id, c.comment, c."createdAt", c."userId", u.username
        FROM comments c
        JOIN users u ON c."userId" = u.id
        WHERE c."postId" = $1
-       ORDER BY c."createdAt" ASC`,
+       ORDER BY c."createdAt" DESC`,
       [postId]
     );
     res.status(200).json(result.rows);
