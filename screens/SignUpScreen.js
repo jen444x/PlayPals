@@ -83,7 +83,12 @@ export default function SignUpScreen({ navigation }) {
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <TouchableWithoutFeedback
+        onPress={() => {
+          if (Platform.OS !== "web") Keyboard.dismiss();
+        }}
+      >
+
         <View style={styles.container}>
           <Animated.Image
             source={require("../assets/pet_logo.png")}
@@ -237,5 +242,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "#FCEECF",
     zIndex: 10,
+    pointerEvents: 'none',
   },
 });

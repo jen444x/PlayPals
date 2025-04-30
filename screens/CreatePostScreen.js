@@ -140,7 +140,12 @@ export default function PersonalFeedScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <TouchableWithoutFeedback
+        onPress={() => {
+          if (Platform.OS !== "web") Keyboard.dismiss();
+        }}
+      >
+
         <View style={styles.innerContainer}>
           {errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
 
