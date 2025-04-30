@@ -102,8 +102,11 @@ export default function LoginScreen({ navigation }) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <TouchableWithoutFeedback
-        onPress={Platform.OS === "web" ? null : Keyboard.dismiss}
+        onPress={() => {
+          if (Platform.OS !== 'web') Keyboard.dismiss();
+        }}
       >
+
         <View style={styles.container}>
           <Animated.Image
             source={require("../assets/pet_logo.png")}
@@ -284,5 +287,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "#FCEECF",
     zIndex: 10,
+    pointerEvents: 'none',
   },
 });

@@ -26,7 +26,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import mime from "mime";
 import { URL } from "../config";
 
-const host = `0wss://${URL}`;
+const host = `wss://${URL}`;
 
 const socket = io(host, {
   transports: ["websocket"],
@@ -350,7 +350,12 @@ export default function ChatScreen() {
         source={require("../assets/petBackground.jpg")}
         style={styles.background}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <TouchableWithoutFeedback
+          onPress={() => {
+            if (Platform.OS !== "web") Keyboard.dismiss();
+          }}
+        >
+
           <KeyboardAvoidingView
             style={styles.flex}
             behavior={Platform.OS === "ios" ? "padding" : "height"}
