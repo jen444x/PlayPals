@@ -190,7 +190,7 @@ const handleSearch = async () => {
               iconSource = require('../assets/paws.png');
             } else if (route.name === "Forums") {
               iconSource = require('../assets/forums.png');
-            } else if (route.name === "Create Post") {
+            } else if (route.name === "Post") {
               iconSource = require('../assets/create.png');
             } else if (route.name === "Calendar") {
               iconSource = require('../assets/time-and-date.png');
@@ -213,10 +213,9 @@ const handleSearch = async () => {
       >
         <Tab.Screen name="Home" component={FeedScreenRender} options={{headerShown: false}} />
         <Tab.Screen name="Pets" component={PlayDateScreen} options={{headerShown: false}} />
+        <Tab.Screen name="Post" component={CreatePostScreenRender} options={{headerShown: false}} />
         <Tab.Screen name="Forums" component={ForumsScreen} options={{headerShown: false}} /> 
-        <Tab.Screen name="Create Post" component={CreatePostScreenRender} options={{headerShown: false}} />
         <Tab.Screen name="Calendar" component={CalendarScreenRender} options={{headerShown: false}} />
-        <Tab.Screen name="Trip Planner" component={TripPlannerScreen} options={{headerShown: false}} />
         <Tab.Screen name="Settings" component={AppSettings} options={{headerShown: false}} />
       </Tab.Navigator>
   );
