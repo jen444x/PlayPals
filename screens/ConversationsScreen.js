@@ -27,6 +27,7 @@ export default function ConversationsScreen() {
 
         const res = await fetch(`${BASE_URL}api/chats/${userId}`);
         const data = await res.json();
+        //console.log("Conversations:", data);
         setConversations(data);
       } catch (err) {
         console.error("Error fetching chats:", err);
@@ -72,7 +73,7 @@ export default function ConversationsScreen() {
         ) : (
         <FlatList
           data={conversations}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.chatID}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
         />

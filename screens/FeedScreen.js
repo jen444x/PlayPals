@@ -397,17 +397,25 @@ export default function FeedScreen() {
                 onLongPress={() => handleDeleteComment(item, index)} 
                 disabled={item.username !== currentUsername}
               >
-                <View style={styles.commentItem}>
-                <Text style={styles.commentText}>
-                  <Text style={styles.commentUsername}>{item.username}: </Text>
-                  {item.comment}
-                </Text>
+              <View style={styles.commentItem}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      closeComments();
+                      navigation.navigate('PublicProfile', { userId: item.userId });
+                    }}
+                  >
+                    <Text style={styles.commentUsername}>{item.username}</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.commentText}>: {item.comment}</Text>
+                </View>
+
                 {item.createdAt && (
                   <Text style={styles.commentTimestamp}>
                     {dayjs(item.createdAt).fromNow()}
                   </Text>
                 )}
-                </View>
+              </View>
               </TouchableOpacity>
               )}
             />
