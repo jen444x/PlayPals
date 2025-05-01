@@ -113,6 +113,49 @@ CREATE TABLE IF NOT EXISTS "comments" (
   "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS "events" (
+  --baseline
+  "id" SERIAL PRIMARY KEY,
+  "owner_id" INTEGER NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+  --from user
+  "title" VARCHAR NOT NULL,
+  "event_type" VARCHAR NOT NULL,
+  "location" VARCHAR,
+  "notes" VARCHAR,
+  "pet" VARCHAR REFERENCES "petName",
+  "time" TIMESTAMP NOT NULL,
+  --memorybank info
+  "index" INTEGER,
+  "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+);
+
+CREATE TABLE IF NOT EXISTS "events" (
+  --baseline
+  "id" SERIAL PRIMARY KEY,
+  "event_id" INTEGER NOT NULL REFERENCES "events"("id") ON DELETE CASCADE,
+  --from user
+  "shared_with_user_id" INTEGER NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+  "permission" VARCHAR NOT NULL CHECK ("permission" IN ('view', 'edit')),
+  UNIQUE("event_id", "shared_with_user_id")
+);
+
+CREATE TABLE "shared_events" (
+  "id" SERIAL PRIMARY KEY
+
+  "event_id" INTEGER NOT NULL REFERENCES "events"("id") ON DELETE CASCADE,
+  "shared_with_user_id" INTEGER NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+  "shared_by_user_id" INTEGER NOT NULL REFERENCES "users"("id") ON DELETE SET NULL,
+  "permission" VARCHAR NOT NULL CHECK ("permission" IN ('view', 'edit')),
+
+)
+INSERT INTO "shared_events" ("event_id", "shared_with_user_id", "shared_by_user_id", "permission") VALUES
+VALUES ($1, $2, $3)
+ON CONFLICT ("event_id", "shared_with_user_id") DO UPDATE
+SET "permission" = EXCLUDED.permission,
+    "shared_by_user_id" = EXCLUDED.shared_by_user_id,
+    "shared_at" = CURRENT_TIMESTAMP;
+
 INSERT INTO "forumTopics" ("name") VALUES
   ('Training'),
   ('Toys'),
@@ -121,6 +164,8 @@ INSERT INTO "forumTopics" ("name") VALUES
   ('Behavior'),
   ('General')
 ON CONFLICT ("name") DO NOTHING;
+
+
 
 CREATE INDEX IF NOT EXISTS idx_comments_postId ON "comments"("postId");
 CREATE INDEX IF NOT EXISTS idx_postLikes_postId ON "postLikes"("postId");
