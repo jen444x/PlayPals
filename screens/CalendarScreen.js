@@ -14,6 +14,10 @@ import { Calendar } from 'react-native-calendars';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
+import EventTypeBubble from '../components/CalendarBubble';
+
+navigation.navigate('SearchEvents', { events });
+//also need to add <Stack.Screen name="SearchEvents" component= (SearchEventsScreen} />
 
 // Validation schema using Yup
 const eventSchema = Yup.object().shape({
@@ -25,6 +29,7 @@ const eventSchema = Yup.object().shape({
 const CalendarScreen = () => {
   const route = useRoute();
   const { petName } = route.params || {};
+
 
   const [selectedDate, setSelectedDate] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
@@ -42,6 +47,46 @@ const CalendarScreen = () => {
     time: '',
     index: null,
   });
+
+  const eventTypeColors = {
+    'Playdate': '#4FC3F7',  //blue
+    'Vet': '#81C784',       //green
+    'Training': '#FFB74D',  //orange
+    'Groominfg': '#BA68C8',  //purple
+    default:'#BDBDBD',
+  };
+
+  const getMarkedDates = () => {
+    const marks = {};
+
+    Object.entries(events).forEach(([date, dayEvents]) => {
+      const dots = [];
+
+      dayEvents.forEach((event) => {
+        const color = eventTYpeColors[event.eventType] || eventTypeColors.default;
+
+        //no duplicates
+        if (!dots.find((d) => d.color === color)) {
+          dots.push({ color, key: '${event.eventType}-${color}' });
+        }
+      });
+
+      marks[date] = {
+        dots,
+        marked: true,
+      };
+    });
+
+    if (selectedDate) {
+      marks[selectedDate] = {
+        ...(marks[selectedDate] || {}),
+        selected: true,
+        selectedColor: '#FF6F00',
+      };
+    }
+
+    return marks;
+  };
 
   // Format Date object to a time string (e.g. "3:00 PM")
   const formatTime = (date) => {
@@ -111,18 +156,13 @@ const CalendarScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🐾 {petName}'s Pet Calendar 🐾</Text>
+      <Text style={styles.title}>🐾 Calendar 🐾</Text>
 
       <Calendar
         style={styles.calendar}
         onDayPress={(day) => setSelectedDate(day.dateString)}
-        markedDates={{
-          [selectedDate]: { selected: true, selectedColor: '#FF6F00' },
-          ...Object.keys(events).reduce((acc, date) => {
-            acc[date] = { marked: true, dotColor: '#D81B60' };
-            return acc;
-          }, {}),
-        }}
+        markedDates={getMarkedDates()}
+        markingType="multi-dot"
         theme={{
           backgroundColor: "#E0F7FA",
           calendarBackground: "#E0F7FA",
@@ -147,18 +187,36 @@ const CalendarScreen = () => {
           <Text style={styles.selectedDateText}>
             🐾 Events for {selectedDate} 🐾:
           </Text>
+
           <FlatList
-            data={events[selectedDate] || []}
+            //data={events[selectedDate] || []}
+            data={filteredEvents.lenght > 0 ? filteredEvents : events[selectedDate] || []}
             keyExtractor={(_, index) => index.toString()}
             renderItem={({ item, index }) => (
-              <View style={styles.eventItem}>
+              {/*altered to show event bubbles*/}
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View
+                  style={{
+                  backgroundColor: eventTypeColors[item.eventType] || eventTypeColors.default,
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  borderRadius: 12,
+                  marginRight: 8,
+                  }}
+                >
+
+        {/*logic for bubble styling */}
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <EventTypeBubble type={item.eventType} />
                 <Text style={styles.eventText}>
-                  🐶 {item.eventType} at {item.location} at {item.time}
+                        at {item.location} at {item.time} on {item.date}
                 </Text>
                 {item.notes ? (
                   <Text style={styles.notesText}>Notes: {item.notes}</Text>
                 ) : null}
-                <View style={styles.eventActions}>
+            </View>
+
+            <View style={styles.eventActions}>
                   <TouchableOpacity
                     style={styles.eventButton}
                     onPress={() => {
@@ -199,6 +257,14 @@ const CalendarScreen = () => {
           </TouchableOpacity>
         </>
       ) : null}
+    {/* navigation to search events screen */}
+    <TouchableOpacity
+      style={styles.searchButton}
+      onPress={() => navigation.navigate('SearchEvents', { events })}
+    >
+      <Text style={styles.searchButtonText}> Search Events </Text>
+    </TouchableOpacity>
+
 
       {/* Modal for Adding/Editing an Event */}
       <Modal visible={modalVisible} animationType="slide" transparent>
@@ -360,6 +426,30 @@ const styles = StyleSheet.create({
     elevation: 3,
     borderWidth: 2,
     borderColor: '#FF4081',
+  },
+  clearButton: {
+    backgroundColor: '#E57373',
+    padding: 8,
+    marginTop: 10,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  clearButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  searchContainer: {
+    padding: 10,
+    backgroundColor: '#FF3E0',
+  },
+  searchInput: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#FF8A65',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
+    color: '#333',
   },
   selectedDateText: {
     fontSize: 20,
