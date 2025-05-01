@@ -55,7 +55,10 @@ const AddPet = () => {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission Denied", "We need permission to access your media library!");
+      Alert.alert(
+        "Permission Denied",
+        "We need permission to access your media library!"
+      );
       return;
     }
 
@@ -210,13 +213,21 @@ const AddPet = () => {
         )}
 
         <View style={styles.imageButton}>
-          <Button title="Upload Pet Picture" onPress={pickImage} color="#FF6F61" />
+          <Button
+            title="Upload Pet Picture"
+            onPress={pickImage}
+            color="#FF6F61"
+          />
         </View>
 
         {petImage && <Image source={{ uri: petImage }} style={styles.image} />}
 
         {isLoading ? (
-          <ActivityIndicator size="large" color="#6D4C41" style={{ marginVertical: 20 }} />
+          <ActivityIndicator
+            size="large"
+            color="#6D4C41"
+            style={{ marginVertical: 20 }}
+          />
         ) : (
           <View style={styles.addButton}>
             <Button title="Add Pet" onPress={handleAddPet} color="#E76F51" />
