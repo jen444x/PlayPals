@@ -48,6 +48,7 @@ var authRouter = require("./routes/api/auth");
 var chatUploadRouter = require("./routes/api/chat");
 var chatRouter = require("./routes/api/chats");
 var profileRouter = require("./routes/api/profile");
+var eventsRouter = require("./routes/api/events");
 
 app.use("/", indexRouter);
 app.use("/api/users", usersRouter);
@@ -61,6 +62,7 @@ app.use("/api/pets", petsRouter);
 app.use("/api/chat", chatUploadRouter);
 app.use("/api/chats", chatRouter);
 app.use("/api/profile", profileRouter);
+app.use("/api/events", eventsRouter);
 
 app.use((req, res, next) => {
   console.log(`Request received: ${req.path}`);
