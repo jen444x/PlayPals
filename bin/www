@@ -1,0 +1,244 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+//var app = require('../app');
+var debug = require('debug')('backend:server');
+var http = require('http');
+const config = require('../config');
+const socketHandler = require('../routes/api/chat')
+
+var app = require('../app');
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+//Edit the NODEPORT variable in the .env file
+var port = normalizePort(config.NODEPORT || '3000');
+app.set('port', port);
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
+
+/*
+const usersState = {
+  users: [],
+  setUsers: function (newUsersArray) {
+    this.users = newUsersArray
+  }
+}
+
+const io = socketIo(server, {
+  cors: {
+    origin: process.env.NODE_ENV === "production"
+      ? false
+      : [`http://localhost:${process.env.NODEPORT}`]
+  }
+})
+
+io.on('connection', socket => {
+  console.log(`User ${socket.id} connected`) //Logging user ID
+
+  // Upon connection - only to user
+  socket.emit("message", buildMsg(ADMIN, "Welcome to Chat App!"))
+
+  socket.on('enterRoom', ({ name, room }) => {
+    //Leave previous room
+    const prevRoom = getUser(socket.id)?.room
+
+    if (prevRoom) {
+      socket.leave(prevRoom)
+      io.to(prevRoom).emit('message', buildMsg(ADMIN, 
+      `${name} has left the room`))
+    }
+
+    const user = activateUser(socket.id, name, room)
+
+    // Cannot update previous room users list until after the state
+    // update in activate user
+    if (prevRoom) {
+      io.to(prevRoom).emit('userList', {
+        users: getUsersInRoom(prevRoom)
+      })
+    }
+    //Join room
+    socket.join(user.room)
+    //To user who joined
+    socket.emit('message', buildMsg(ADMIN, `You have joined the
+      ${user.room} chat room`))
+    //TO everyone else
+    socket.broadcast.to(user.room).emit('message', buildMsg(
+      ADMIN, `${user.name} has joined the room`))
+    //Update user list for room
+    io.to(user.room).emit('userList', {
+      users: getUsersInRoom(user.room)
+    })
+    //Update rooms list for everyone
+    io.emit('roomList', {
+      rooms: getAllActiveRooms
+    })
+  })
+
+  socket.on('message', ({ name, text }) => {
+    const room = getUser(socket.id)?.room
+    if (room) {
+      io.to(room).emit('message', buildMsg(name, text))
+    }
+    //io.emit('message', `${socket.id.substring(0,5)}: ${data}`) //Send to all connected clients
+  })
+
+  //User disconnects - to others
+  socket.on('disconnect', () => {
+    const user = getUser(socket.id)
+    userLeavesApp(socket.id)
+
+    //socket.broadcast.emit('message', 
+    //  `User ${socket.id.substring(0,5)} disconnected`)
+
+    if (user) {
+      io.to(user.room).emit('message', buildMsg(ADMIN, `
+        ${user.name} has left the room`))
+
+        io.to(user.room).emit('userList', {
+          users: getUsersInRoom(user.room)
+        })
+
+        io.emit('roomList', {
+          rooms: getAllActiveRooms()
+        })
+    }
+    console.log(`User ${socket.id} disconnected`)
+  })
+
+  //Listen for activity
+  socket.on('activity', (name) => {
+    const room = getUser(socket.id)?.room
+    if (room) {
+      socket.broadcast.to(room).emit('activity', name)
+    }
+    //socket.broadcast.emit('activity', name)
+  })
+})
+
+function buildMsg(name, text) {
+  return { 
+    name, 
+    text, 
+    time: new Intl.DateTimeFormat('default', {
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric'
+    }).format(new Date())
+  }
+}
+
+//User functions
+function activateUser(id, name, room) {
+  const user = { id, name, room }
+  usersState.setUsers([
+    ...usersState.users.filter(user => user.id !== id),
+    user
+  ])
+  return user
+}
+
+function userLeavesApp(id) {
+  usersState.setUsers(
+    usersState.users.filter(user => user.id !== id)
+  )
+}
+
+function getUser(id) {
+  return usersState.users.find(user => user.id === id)
+}
+
+function getUsersInRoom(room) {
+  return usersState.users.filter(user => user.room === room)
+}
+
+function getAllActiveRooms() {
+  return Array.from(new Set(usersState.users.map(user => user.room)))
+}
+*/
+
+socketHandler(server)
+
+console.log(`Server running on ${config.DOMAIN} on port ${config.NODEPORT}`);
+console.log(`Using database ${config.DATABASE} from ${config.DB_HOST}`)
+
+module.exports = server

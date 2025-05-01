@@ -1,33 +1,26 @@
 const path = require('path');
 const dotenv = require('dotenv');
+const Pool = require("pg").Pool;
+const config = require("./../config")
 
-if (process.env.NODE_ENV === 'dev') {
-    dotenv.config({path: path.join(__dirname, './../.env.dev')});
-} else {
-    dotenv.config({path: path.join(__dirname, './../.env.prod')});
-}
-
-const postgres = require('postgres');
-//const {Pool, Client} = require('postgres');
-
-const sql = postgres({
-    host                 : process.env.HOST,            // Postgres ip address[s] or domain name[s]
-    port                 : process.env.PORT,          // Postgres server port[s]
-    database             : process.env.DATABASE,            // Name of database to connect to
-    username             : process.env.USER,            // Username of database user
-    password             : process.env.PASSWORD,            // Password of database user
+const pool = new Pool({
+    host                 : config.DB_HOST,            // Postgres ip address[s] or domain name[s]
+    port                 : config.DB_PORT,          // Postgres server port[s]
+    database             : config.DATABASE,            // Name of database to connect to
+    user                 : config.DB_USER,            // Username of database user
+    password             : config.PASSWORD,            // Password of database user
 });
 
+/*
 (async () => {
     try {
-        const result = await sql`SELECT current_user`;
+        const result = await pool.query('SELECT current_user');
         console.log(result);
     } catch (err) {
         console.error("Database error:", err);
-    } finally {
-        await sql.end();
     }
 })();
+*/
 
 //Creating a pool
 /*
@@ -54,5 +47,5 @@ const pool = new Pool({
 })();
 */
 
-module.exports = sql;
+module.exports = pool;
 //module.exports = pool;

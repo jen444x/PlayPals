@@ -1,3 +1,11 @@
+.env
 .env.dev
 .env.prod
+package-lock.json
 /node_modules
+
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.svg
