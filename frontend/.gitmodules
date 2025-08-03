@@ -1,0 +1,3 @@
+[submodule "playpals-backend"]
+	path = playpals-backend
+	url = https://solaire.cs.csub.edu/gitlab/eeera/playpals-backend.git
