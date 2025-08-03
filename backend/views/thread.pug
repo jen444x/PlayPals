@@ -1,0 +1,21 @@
+doctype html 
+
+html(lang=en)
+    head 
+        meta(charset="UTF-8")
+        meta(name="viewport", content="width=device-width, initial-scale=1.0")
+        link(rel="stylesheet", href="css/style.css")
+        title Forum Main Page
+        
+    header
+        .nav-bar
+    body 
+        each post in posts
+            div
+                p= post.postContent
+        form(action="/api/forum/submitPost" method="POST")
+            input(type="hidden" name='threadId' value=threadId)
+            label(for='body') Post Text
+            textarea(id='body' name='body' required)
+            br
+            button(type="submit") Submit

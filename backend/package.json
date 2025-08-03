@@ -1,0 +1,34 @@
+{
+  "name": "backend",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start_prod": "node ./bin/www mode=production",
+    "start_dev": "nodemon ./bin/www mode=development",
+    "start_dev_local": "node ./bin/www mode=development_local"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cookie-parser": "~1.4.4",
+    "cors": "^2.8.5",
+    "debug": "~2.6.9",
+    "dotenv": "^16.4.5",
+    "express": "~4.16.1",
+    "express-session": "^1.18.1",
+    "http-errors": "~1.6.3",
+    "jade": "~1.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "mime": "^4.0.6",
+    "mime-types": "^3.0.1",
+    "morgan": "~1.9.1",
+    "multer": "^1.4.5-lts.1",
+    "nodemon": "^3.1.9",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
+    "pg": "^8.13.1",
+    "postgres": "^3.4.5",
+    "pug": "^3.0.3",
+    "socket.io": "^4.8.1",
+    "ws": "^8.18.0"
+  }
+}
